@@ -25,3 +25,9 @@ export const relativeLabel = (s: DateStr, today: DateStr = todayStr()): string =
 
 /** 播種日からの培養日数 (Day 0 = 播種日) */
 export const cultureDay = (seedDate: DateStr, on: DateStr = todayStr()): number => diffDays(seedDate, on)
+
+/** 培養日数の表示（播種前なら「播種まで n 日」） */
+export const cultureLabel = (seedDate: DateStr, on: DateStr = todayStr()): string => {
+  const d = diffDays(seedDate, on)
+  return d < 0 ? `播種まで${-d}日` : `${d}日目`
+}

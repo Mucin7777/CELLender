@@ -1,10 +1,10 @@
 import { useStore } from '../store/useStore'
 import { useUI, confirmDialog } from '../store/useUI'
 import { EVENT_TYPE_META, SEEDING_STATUS_META } from '../lib/constants'
-import { cultureDay, fmt, relativeLabel } from '../lib/date'
+import { cultureLabel, fmt, relativeLabel } from '../lib/date'
 import { navigate } from '../lib/router'
 import type { CalendarEvent } from '../types'
-import { EVENT_ICONS } from './Agenda'
+import { EventTile, eventTone } from './EventRow'
 import { LineDot, List, Row, Sheet } from './ui'
 
 export function EventDetail({ event: ev }: { event: CalendarEvent }) {
@@ -20,7 +20,6 @@ export function EventDetail({ event: ev }: { event: CalendarEvent }) {
   const date =
     ev.type === 'passage_plan' ? (line?.nextPassageDate ?? ev.date) : (assay?.date ?? task?.date ?? passage?.date ?? (ev.type === 'seeding' ? seeding?.date : undefined) ?? ev.date)
   const done = assay?.done ?? task?.done ?? ev.done
-  const Icon = EVENT_ICONS[ev.type]
   const title = assay?.name ?? task?.title ?? (ev.type === 'seeding' ? `${line?.name ?? ''} を播種` : line?.name) ?? ev.title
   const notes = assay?.notes || task?.notes || passage?.notes || (ev.type === 'seeding' ? seeding?.notes : '')
 
@@ -95,11 +94,11 @@ export function EventDetail({ event: ev }: { event: CalendarEvent }) {
       footer={primary}
     >
       <div className="mb-5 flex items-start gap-3">
-        <span className="mt-1 flex size-10 shrink-0 items-center justify-center rounded-xl bg-canvas text-sub">
-          <Icon className="size-5" />
+        <span className="mt-1">
+          <EventTile event={{ ...ev, done }} line={line} size={44} />
         </span>
         <div className="min-w-0">
-          <div className="text-[13px] font-medium text-sub">{EVENT_TYPE_META[ev.type].label}{done && ' · 完了'}</div>
+          <div className="text-[13px] font-bold" style={{ color: eventTone(line).deep }}>{EVENT_TYPE_META[ev.type].label}{done && ' · 完了'}</div>
           <div className="text-[22px] font-bold leading-snug">{title}</div>
           <div className="mt-0.5 text-[14px] text-sub">
             {fmt(date, 'M月d日 (E)')}
@@ -108,22 +107,22 @@ export function EventDetail({ event: ev }: { event: CalendarEvent }) {
         </div>
       </div>
 
-      <List className="bg-canvas">
+      <List className="bg-field">
         {ev.movable && (
           <label className="flex min-h-14 items-center gap-3 px-4">
             <span className="flex-1 text-[15px] font-semibold">日付を変更</span>
             <input
               type="date"
-              className="rounded-lg bg-white px-2 py-1.5 text-[15px] outline-none focus:ring-2 focus:ring-brand-500"
+              className="rounded-lg bg-white px-2 py-1.5 text-[15px] outline-none focus:ring-2 focus:ring-teal"
               value={date}
               onChange={(e) => e.target.value && st.moveEvent({ ...ev, date }, e.target.value)}
             />
           </label>
         )}
         {ev.type === 'passage_plan' && line && (
-          <Row title="継代数" right={<span className="font-mono text-[15px]">P{line.passageNumber} → P{line.passageNumber + 1}</span>} />
+          <Row title="継代数" right={<span className="font-num text-[15px]">P{line.passageNumber} → P{line.passageNumber + 1}</span>} />
         )}
-        {passage && <Row title="継代後" right={<span className="font-mono text-[15px]">P{passage.passageNumber}{passage.splitRatio && ` (${passage.splitRatio})`}</span>} />}
+        {passage && <Row title="継代後" right={<span className="font-num text-[15px]">P{passage.passageNumber}{passage.splitRatio && ` (${passage.splitRatio})`}</span>} />}
         {line && (
           <Row
             onClick={() => go({ view: 'lines', id: line.id })}
@@ -137,14 +136,14 @@ export function EventDetail({ event: ev }: { event: CalendarEvent }) {
           <Row
             onClick={() => go({ view: 'seedings', id: seeding.id })}
             title={`${fmt(seeding.date, 'M/d')} 播種 · ${seeding.plateType}`}
-            sub={`${cultureDay(seeding.date, date)}日目 · ${SEEDING_STATUS_META[seeding.status].label}${seeding.purpose ? ` · ${seeding.purpose}` : ''}`}
+            sub={`${cultureLabel(seeding.date, date)} · ${SEEDING_STATUS_META[seeding.status].label}${seeding.purpose ? ` · ${seeding.purpose}` : ''}`}
             chevron
           />
         )}
       </List>
 
       {(notes || assay?.result) && (
-        <div className="mt-4 space-y-3 rounded-2xl bg-canvas px-4 py-3 text-[14px]">
+        <div className="mt-4 space-y-3 rounded-2xl bg-field px-4 py-3 text-[14px]">
           {notes && (
             <div>
               <div className="text-[12px] font-medium text-sub">メモ</div>
@@ -161,7 +160,7 @@ export function EventDetail({ event: ev }: { event: CalendarEvent }) {
       )}
 
       {onDelete && (
-        <button className="mt-4 min-h-11 w-full text-[15px] font-semibold text-rose-600" onClick={onDelete}>
+        <button className="mt-4 min-h-11 w-full text-[15px] font-semibold text-danger" onClick={onDelete}>
           {passage ? 'この継代記録を取り消す' : '削除'}
         </button>
       )}

@@ -17,8 +17,8 @@ export function AddSheet({ date }: { date?: string }) {
     fn()
   }
 
-  const Icon = ({ children, color }: { children: React.ReactNode; color: string }) => (
-    <span className="flex size-9 shrink-0 items-center justify-center rounded-xl text-white" style={{ backgroundColor: color }}>
+  const Icon = ({ children }: { children: React.ReactNode }) => (
+    <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-mint text-teal-dark">
       {children}
     </span>
   )
@@ -37,7 +37,7 @@ export function AddSheet({ date }: { date?: string }) {
         {lines.length === 0 ? (
           <p className="py-6 text-center text-sub">細胞ラインがありません</p>
         ) : (
-          <List className="bg-canvas">
+          <List>
             {lines.map((l) => (
               <Row
                 key={l.id}
@@ -45,7 +45,7 @@ export function AddSheet({ date }: { date?: string }) {
                 left={<LineDot color={l.color} className="size-3" />}
                 title={l.name}
                 sub={l.nextPassageDate ? `予定 ${fmt(l.nextPassageDate, 'M/d')}（${relativeLabel(l.nextPassageDate)}）` : '予定なし'}
-                right={<span className="font-mono text-[13px] text-sub">P{l.passageNumber}</span>}
+                right={<span className="font-num text-[13px] text-sub">P{l.passageNumber}</span>}
                 chevron
               />
             ))}
@@ -57,14 +57,14 @@ export function AddSheet({ date }: { date?: string }) {
 
   return (
     <Sheet onClose={close} title={date ? `${fmt(d, 'M月d日 (E)')} に追加` : '新規追加'}>
-      <List className="bg-canvas">
-        <Row onClick={() => setPickLine(true)} left={<Icon color="#0d9488"><GitBranch className="size-4.5" /></Icon>} title="継代を記録" sub="P数を進めて次回予定を入れる" chevron />
-        <Row onClick={() => go(() => open({ kind: 'seeding', date: d }))} left={<Icon color="#2563eb"><FlaskConical className="size-4.5" /></Icon>} title="播種を記録" sub="プレートへの播種を登録" chevron />
-        <Row onClick={() => go(() => open({ kind: 'assay', date: d }))} left={<Icon color="#db2777"><Beaker className="size-4.5" /></Icon>} title="アッセイを予定" sub="播種記録にひもづけて登録" chevron />
-        <Row onClick={() => go(() => open({ kind: 'task', date: d }))} left={<Icon color="#ca8a04"><Droplets className="size-4.5" /></Icon>} title="培地交換・その他" sub="培地交換、試薬発注など" chevron />
+      <List>
+        <Row onClick={() => setPickLine(true)} left={<Icon><GitBranch className="size-4.5" /></Icon>} title="継代を記録" sub="P数を進めて次回予定を入れる" chevron />
+        <Row onClick={() => go(() => open({ kind: 'seeding', date: d }))} left={<Icon><FlaskConical className="size-4.5" /></Icon>} title="播種を記録" sub="プレートへの播種を登録" chevron />
+        <Row onClick={() => go(() => open({ kind: 'assay', date: d }))} left={<Icon><Beaker className="size-4.5" /></Icon>} title="アッセイを予定" sub="播種記録にひもづけて登録" chevron />
+        <Row onClick={() => go(() => open({ kind: 'task', date: d }))} left={<Icon><Droplets className="size-4.5" /></Icon>} title="培地交換・その他" sub="培地交換、試薬発注など" chevron />
       </List>
-      <List className="mt-3 bg-canvas">
-        <Row onClick={() => go(() => open({ kind: 'line' }))} left={<Icon color="#6b7280"><Plus className="size-4.5" /></Icon>} title="細胞ラインを追加" chevron />
+      <List className="mt-3">
+        <Row onClick={() => go(() => open({ kind: 'line' }))} left={<Icon><Plus className="size-4.5" /></Icon>} title="細胞ラインを追加" chevron />
       </List>
     </Sheet>
   )

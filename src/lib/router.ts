@@ -1,10 +1,19 @@
 import { useEffect, useState } from 'react'
 
-export type Route = { view: 'home' } | { view: 'lines'; id?: string } | { view: 'seedings'; id?: string } | { view: 'settings' }
+export type Route =
+  | { view: 'home' }
+  | { view: 'day'; date: string }
+  | { view: 'lines'; id?: string }
+  | { view: 'seedings'; id?: string }
+  | { view: 'settings' }
+
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
 
 export function parseHash(hash: string): Route {
   const [view, id] = hash.replace(/^#\/?/, '').split('/')
   switch (view) {
+    case 'day':
+      return id && DATE_RE.test(id) ? { view: 'day', date: id } : { view: 'home' }
     case 'lines':
       return { view: 'lines', id: id || undefined }
     case 'seedings':
@@ -19,6 +28,7 @@ export function parseHash(hash: string): Route {
 
 export const routeToHash = (r: Route): string => {
   if (r.view === 'home') return '#/'
+  if (r.view === 'day') return `#/day/${r.date}`
   if ((r.view === 'lines' || r.view === 'seedings') && r.id) return `#/${r.view}/${r.id}`
   return `#/${r.view}`
 }

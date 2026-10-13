@@ -18,6 +18,12 @@ export interface Toast {
 }
 
 interface UIState {
+  /** カレンダーで表示中の 2 週間の基準日（その週から 2 週間を表示）。null は今日 */
+  calAnchor: DateStr | null
+  /** 最後に開いた日付（カレンダーで選択日として示す） */
+  lastDay: DateStr | null
+  setCalAnchor: (d: DateStr | null) => void
+  setLastDay: (d: DateStr | null) => void
   /** モーダルはスタックで管理（イベント詳細 → 編集 などの入れ子に対応） */
   modals: ModalState[]
   open: (m: ModalState) => void
@@ -31,6 +37,10 @@ interface UIState {
 let toastSeq = 0
 
 export const useUI = create<UIState>()((set, get) => ({
+  calAnchor: null,
+  lastDay: null,
+  setCalAnchor: (d) => set({ calAnchor: d }),
+  setLastDay: (d) => set({ lastDay: d }),
   modals: [],
   open: (m) => set((s) => ({ modals: [...s.modals, m] })),
   close: () => set((s) => ({ modals: s.modals.slice(0, -1) })),

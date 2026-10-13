@@ -114,7 +114,7 @@ export function SeedingForm({ id, lineId, date }: { id?: string; lineId?: string
                 onClick={() => pickLine(l.id)}
                 className={cx(
                   'flex min-h-10 shrink-0 items-center gap-2 rounded-full px-3.5 text-[14px] font-semibold transition',
-                  form.lineId === l.id ? 'bg-ink text-white' : 'bg-canvas',
+                  form.lineId === l.id ? 'bg-mint text-teal-dark shadow-[inset_0_0_0_1.5px_var(--color-teal)]' : 'bg-field hover:bg-mint-soft',
                 )}
               >
                 <LineDot color={l.color} />
@@ -149,7 +149,7 @@ export function SeedingForm({ id, lineId, date }: { id?: string; lineId?: string
               <span className="flex-1 text-[14px] font-semibold">アッセイ予定</span>
               <button
                 type="button"
-                className="btn-sm btn bg-white text-brand-700"
+                className="btn-sm btn bg-white text-teal-dark"
                 onClick={() => setDrafts((d) => [...d, { key: ++draftSeq, name: '', day: (d.at(-1)?.day ?? 1) + 1 }])}
               >
                 <Plus className="size-4" />
@@ -228,7 +228,7 @@ export function SeedingForm({ id, lineId, date }: { id?: string; lineId?: string
                 options={(Object.keys(SEEDING_STATUS_META) as SeedingStatus[]).map((k) => ({ value: k, label: SEEDING_STATUS_META[k].short }))}
               />
             </div>
-            <button type="button" className="min-h-11 w-full text-[15px] font-semibold text-rose-600" onClick={onDelete}>
+            <button type="button" className="min-h-11 w-full text-[15px] font-semibold text-danger" onClick={onDelete}>
               この播種記録を削除
             </button>
           </>

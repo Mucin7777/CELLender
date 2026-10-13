@@ -1,6 +1,7 @@
 import type { AppData, Assay, CellLine, PassageRecord, Seeding, Task } from '../types'
 import { addDaysStr, todayStr } from './date'
 import { uid } from './id'
+import { LINE_COLORS } from './constants'
 
 /** 今日を基準にしたデモ用データ */
 export function createSampleData(): AppData {
@@ -22,10 +23,10 @@ export function createSampleData(): AppData {
     ...p,
   })
 
-  const ileum1 = mk({ name: 'ヒト回腸 Lot1', origin: 'ヒト回腸オルガノイド', lot: 'Lot1', color: '#0d9488', passageNumber: 12, lastPassageDate: d(-7), nextPassageDate: d(0), medium: 'IntestiCult', vessel: 'Matrigel ドーム (24well)' })
-  const ileum2 = mk({ name: 'ヒト回腸 Lot2', origin: 'ヒト回腸オルガノイド', lot: 'Lot2', color: '#2563eb', passageNumber: 8, lastPassageDate: d(-5), nextPassageDate: d(2), medium: 'IntestiCult', vessel: 'Matrigel ドーム (24well)' })
-  const mouse3 = mk({ name: 'マウス Lot3', origin: 'マウス小腸オルガノイド', lot: 'Lot3', color: '#7c3aed', passageNumber: 21, lastPassageDate: d(-6), nextPassageDate: d(1), passageIntervalDays: 6, medium: 'ENR', vessel: 'Matrigel ドーム (48well)' })
-  const caco2 = mk({ name: 'Caco-2', origin: 'ヒト結腸癌由来株', lot: 'ATCC HTB-37', color: '#ea580c', passageNumber: 34, lastPassageDate: d(-4), nextPassageDate: d(-1), passageIntervalDays: 3, medium: 'DMEM + 10% FBS', vessel: 'T75 フラスコ' })
+  const ileum1 = mk({ name: 'ヒト回腸 Lot1', shortName: '回腸1', origin: 'ヒト回腸オルガノイド', lot: 'Lot1', color: LINE_COLORS[0], passageNumber: 12, lastPassageDate: d(-7), nextPassageDate: d(0), medium: 'IntestiCult', vessel: 'Matrigel ドーム (24well)' })
+  const ileum2 = mk({ name: 'ヒト回腸 Lot2', shortName: '回腸2', origin: 'ヒト回腸オルガノイド', lot: 'Lot2', color: LINE_COLORS[1], passageNumber: 8, lastPassageDate: d(-5), nextPassageDate: d(2), medium: 'IntestiCult', vessel: 'Matrigel ドーム (24well)' })
+  const mouse3 = mk({ name: 'マウス Lot3', shortName: 'マウス3', origin: 'マウス小腸オルガノイド', lot: 'Lot3', color: LINE_COLORS[2], passageNumber: 21, lastPassageDate: d(-6), nextPassageDate: d(1), passageIntervalDays: 6, medium: 'ENR', vessel: 'Matrigel ドーム (48well)' })
+  const caco2 = mk({ name: 'Caco-2', shortName: 'Caco2', origin: 'ヒト結腸癌由来株', lot: 'ATCC HTB-37', color: LINE_COLORS[3], passageNumber: 34, lastPassageDate: d(-4), nextPassageDate: d(-1), passageIntervalDays: 3, medium: 'DMEM + 10% FBS', vessel: 'T75 フラスコ' })
   const lines = [ileum1, ileum2, mouse3, caco2]
 
   const passages: PassageRecord[] = [
@@ -43,7 +44,8 @@ export function createSampleData(): AppData {
   const s2 = sd({ lineId: caco2.id, date: d(-18), plateType: 'Transwell (24)', passageNumber: 30, density: '1×10^5 cells/cm²', wells: '12 inserts', purpose: 'バリア機能評価 (21日分化)', notes: '培地交換 2-3日おき', status: 'assay_scheduled' })
   const s3 = sd({ lineId: ileum2.id, date: d(-1), plateType: '24ウェルプレート', passageNumber: 8, density: '', wells: '24 wells', purpose: '分化誘導 → qPCR', notes: '', status: 'culturing' })
   const s4 = sd({ lineId: mouse3.id, date: d(-20), plateType: '48ウェルプレート', passageNumber: 18, density: '', wells: '', purpose: '免疫染色', notes: '', status: 'completed' })
-  const seedings = [s1, s2, s3, s4]
+  const s5 = sd({ lineId: ileum1.id, date: d(7), plateType: '96ウェルプレート', passageNumber: 13, density: '5,000 cells/well', wells: '60 wells', purpose: '薬剤 B 評価（予定）', notes: '', status: 'culturing' })
+  const seedings = [s1, s2, s3, s4, s5]
 
   const as = (p: Omit<Assay, 'id' | 'doneAt' | 'result'> & Partial<Pick<Assay, 'result'>>): Assay => ({
     id: uid(),
@@ -57,13 +59,17 @@ export function createSampleData(): AppData {
     as({ seedingId: s2.id, date: d(3), time: '13:00', name: 'TEER 測定', notes: '', done: false }),
     as({ seedingId: s2.id, date: d(4), time: '', name: '透過性アッセイ (FITC-dextran)', notes: '', done: false }),
     as({ seedingId: s4.id, date: d(-13), time: '', name: '固定・免疫染色', notes: '', done: true, result: 'Lgr5, Villin 陽性を確認' }),
+    as({ seedingId: s3.id, date: d(8), time: '', name: 'qPCR 用回収', notes: '', done: false }),
   ]
 
   const tasks: Task[] = [
     { id: uid(), date: d(0), kind: 'medium', title: 'Transwell 培地交換', lineId: caco2.id, seedingId: s2.id, notes: '', done: false },
     { id: uid(), date: d(-2), kind: 'medium', title: 'Transwell 培地交換', lineId: caco2.id, seedingId: s2.id, notes: '', done: true },
     { id: uid(), date: d(1), kind: 'medium', title: 'オルガノイド培地交換', lineId: ileum2.id, seedingId: null, notes: '', done: false },
+    { id: uid(), date: d(3), kind: 'medium', title: 'Transwell 培地交換', lineId: caco2.id, seedingId: s2.id, notes: '', done: false },
     { id: uid(), date: d(5), kind: 'other', title: 'Matrigel 発注', lineId: null, seedingId: null, notes: '', done: false },
+    { id: uid(), date: d(6), kind: 'medium', title: 'オルガノイド培地交換', lineId: ileum2.id, seedingId: s3.id, notes: '', done: false },
+    { id: uid(), date: d(10), kind: 'medium', title: 'オルガノイド培地交換', lineId: ileum2.id, seedingId: s3.id, notes: '', done: false },
   ]
 
   return { version: 1, lines, passages, seedings, assays, tasks }

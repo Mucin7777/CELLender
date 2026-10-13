@@ -2,6 +2,7 @@ import { useEffect, type ReactNode } from 'react'
 import { ChevronRight, X } from 'lucide-react'
 import type { SeedingStatus } from '../types'
 import { SEEDING_STATUS_META } from '../lib/constants'
+import { lineTone } from '../lib/color'
 
 export function cx(...classes: (string | false | null | undefined)[]) {
   return classes.filter(Boolean).join(' ')
@@ -34,7 +35,7 @@ export function Sheet({
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-6">
-      <div className="animate-fade-in absolute inset-0 bg-black/35" onClick={onClose} />
+      <div className="animate-fade-in absolute inset-0 bg-[#1E302B]/35" onClick={onClose} />
       <div
         role="dialog"
         aria-modal="true"
@@ -74,7 +75,7 @@ export function PageTitle({ title, sub, right, back }: { title: ReactNode; sub?:
 export function SectionLabel({ children, right, tone }: { children: ReactNode; right?: ReactNode; tone?: 'danger' }) {
   return (
     <div className="mb-2 mt-6 flex items-center gap-2 px-1 first:mt-0">
-      <h2 className={cx('flex-1 text-[13px] font-semibold', tone === 'danger' ? 'text-rose-600' : 'text-sub')}>{children}</h2>
+      <h2 className={cx('flex-1 text-[13px] font-semibold', tone === 'danger' ? 'text-danger' : 'text-sub')}>{children}</h2>
       {right}
     </div>
   )
@@ -108,7 +109,7 @@ export function Row({
       onClick={onClick}
       className={cx(
         'flex min-h-14 w-full items-center gap-3 px-4 py-2.5 text-left',
-        onClick && 'transition active:bg-black/[.03] hover:bg-black/[.015]',
+        onClick && 'transition hover:bg-mint-soft/60 active:bg-mint-soft',
         dim && 'opacity-50',
       )}
     >
@@ -138,13 +139,16 @@ export function StatusBadge({ status }: { status: SeedingStatus }) {
   return <span className={cx('inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[12px] font-medium', meta.className)}>{meta.label}</span>
 }
 
+/** 細胞ラインの色見本。カレンダーの帯と同じ淡い色に、濃い色の輪郭 */
 export function LineDot({ color, className }: { color: string; className?: string }) {
-  return <span className={cx('inline-block size-2.5 shrink-0 rounded-full', className)} style={{ backgroundColor: color }} />
-}
-
-/** 行の左端に置く細胞ラインの色帯 */
-export function ColorBar({ color }: { color?: string }) {
-  return <span className="h-9 w-1 shrink-0 rounded-full" style={{ backgroundColor: color ?? '#d1d5db' }} />
+  const t = lineTone(color)
+  return (
+    <span
+      aria-hidden="true"
+      className={cx('inline-block size-3 shrink-0 rounded-full', className)}
+      style={{ backgroundColor: t.pale, boxShadow: `inset 0 0 0 1.5px ${t.deep}` }}
+    />
+  )
 }
 
 export function EmptyState({ icon, title, description, action }: { icon?: ReactNode; title: string; description?: string; action?: ReactNode }) {
@@ -170,7 +174,7 @@ export function Segmented<T extends string>({
   full?: boolean
 }) {
   return (
-    <div className={cx('flex rounded-xl bg-black/[.05] p-0.5', full ? 'w-full' : 'inline-flex')}>
+    <div className={cx('flex rounded-xl bg-mint-soft p-0.5', full ? 'w-full' : 'inline-flex')}>
       {options.map((o) => (
         <button
           key={o.value}
@@ -178,7 +182,7 @@ export function Segmented<T extends string>({
           onClick={() => onChange(o.value)}
           className={cx(
             'min-h-9 flex-1 whitespace-nowrap rounded-[10px] px-2 text-[13px] font-semibold transition',
-            value === o.value ? 'bg-white text-ink shadow-sm' : 'text-sub',
+            value === o.value ? 'bg-white text-ink shadow-[0_1px_3px_rgba(40,62,56,.14)]' : 'text-sub hover:text-ink',
           )}
         >
           {o.label}
@@ -205,7 +209,7 @@ export function Check({ checked, onChange, label }: { checked: boolean; onChange
       <span
         className={cx(
           'flex size-6 items-center justify-center rounded-full border-2 transition',
-          checked ? 'border-brand-600 bg-brand-600 text-white' : 'border-gray-300 bg-white',
+          checked ? 'border-teal bg-teal text-white' : 'border-gray-sage bg-white',
         )}
       >
         {checked && (
@@ -222,7 +226,7 @@ export function Check({ checked, onChange, label }: { checked: boolean; onChange
 export function Disclosure({ open, onToggle, label, children }: { open: boolean; onToggle: () => void; label: string; children: ReactNode }) {
   return (
     <div>
-      <button type="button" onClick={onToggle} className="flex min-h-11 w-full items-center gap-1 text-[14px] font-semibold text-brand-700">
+      <button type="button" onClick={onToggle} className="flex min-h-11 w-full items-center gap-1 text-[14px] font-bold text-teal-dark">
         <ChevronRight className={cx('size-4 transition', open && 'rotate-90')} />
         {label}
       </button>
@@ -242,7 +246,7 @@ export function Chips({ options, value, onPick }: { options: string[]; value: st
           onClick={() => onPick(o)}
           className={cx(
             'min-h-9 shrink-0 rounded-full px-3 text-[13px] font-medium transition',
-            value === o ? 'bg-ink text-white' : 'bg-canvas text-ink active:bg-hair',
+            value === o ? 'bg-mint text-teal-dark shadow-[inset_0_0_0_1.5px_var(--color-teal)]' : 'bg-field text-ink hover:bg-mint-soft',
           )}
         >
           {o}
@@ -261,7 +265,7 @@ export function Toggle({ checked, onChange, label }: { checked: boolean; onChang
         role="switch"
         aria-checked={checked}
         onClick={() => onChange(!checked)}
-        className={cx('relative h-7 w-12 shrink-0 rounded-full transition', checked ? 'bg-brand-600' : 'bg-gray-300')}
+        className={cx('relative h-7 w-12 shrink-0 rounded-full transition', checked ? 'bg-teal' : 'bg-gray-sage')}
       >
         <span className={cx('absolute top-0.5 size-6 rounded-full bg-white shadow transition-all', checked ? 'left-[22px]' : 'left-0.5')} />
       </button>

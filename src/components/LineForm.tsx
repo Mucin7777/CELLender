@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useStore, type NewLine } from '../store/useStore'
 import { useUI, confirmDialog } from '../store/useUI'
 import { LINE_COLORS } from '../lib/constants'
+import { lineTone } from '../lib/color'
 import { addDaysStr } from '../lib/date'
 import { navigate } from '../lib/router'
 import { Disclosure, Field, Sheet, cx } from './ui'
@@ -29,7 +30,7 @@ export function LineForm({ id }: { id?: string }) {
     },
   )
   const [nextTouched, setNextTouched] = useState(!!existing)
-  const [more, setMore] = useState(!!existing && !!(existing.origin || existing.lot || existing.medium || existing.vessel || existing.notes))
+  const [more, setMore] = useState(!!existing && !!(existing.shortName || existing.origin || existing.lot || existing.medium || existing.vessel || existing.notes))
 
   const set = <K extends keyof NewLine>(k: K, v: NewLine[K]) =>
     setForm((f) => {
@@ -85,18 +86,33 @@ export function LineForm({ id }: { id?: string }) {
           <input className="input" autoFocus={!existing} value={form.name} onChange={(e) => set('name', e.target.value)} placeholder="例: ヒト回腸 Lot1" required />
         </Field>
         <div>
-          <span className="label">色</span>
-          <div className="flex flex-wrap gap-2.5">
-            {LINE_COLORS.map((c) => (
-              <button
-                key={c}
-                type="button"
-                onClick={() => set('color', c)}
-                className={cx('size-8 rounded-full ring-offset-2 transition', form.color === c && 'ring-2 ring-ink')}
-                style={{ backgroundColor: c }}
-                aria-label={c}
-              />
-            ))}
+          <span className="label" id="line-color-label">色（カレンダーの帯の色）</span>
+          <div className="flex items-start gap-4">
+            <div className="flex flex-1 flex-wrap gap-2.5" role="radiogroup" aria-labelledby="line-color-label">
+              {(LINE_COLORS.includes(form.color) ? LINE_COLORS : [form.color, ...LINE_COLORS]).map((c, i) => {
+                const t = lineTone(c)
+                return (
+                  <button
+                    key={c}
+                    type="button"
+                    role="radio"
+                    aria-checked={form.color === c}
+                    aria-label={`色 ${i + 1}`}
+                    onClick={() => set('color', c)}
+                    className={cx('size-9 rounded-full ring-offset-2 transition', form.color === c ? 'ring-2 ring-teal' : 'hover:scale-105')}
+                    style={{ backgroundColor: t.pale, boxShadow: `inset 0 0 0 2px ${t.deep}` }}
+                  />
+                )
+              })}
+            </div>
+            <div className="flex shrink-0 flex-col gap-1 pt-0.5" aria-hidden="true">
+              <span className="rounded-[4px] border px-1.5 py-[3px] text-[10px] font-bold leading-none" style={{ backgroundColor: lineTone(form.color).pale, color: lineTone(form.color).deep, borderColor: lineTone(form.color).pale }}>
+                継代
+              </span>
+              <span className="rounded-[4px] border px-1.5 py-[3px] text-[10px] font-bold leading-none" style={{ backgroundColor: lineTone(form.color).deep, color: '#FFFFFF', borderColor: lineTone(form.color).deep }}>
+                アッセイ
+              </span>
+            </div>
           </div>
         </div>
         <div className="grid grid-cols-2 gap-3">
@@ -124,7 +140,10 @@ export function LineForm({ id }: { id?: string }) {
             />
           </Field>
         </div>
-        <Disclosure open={more} onToggle={() => setMore((v) => !v)} label="由来・培地・メモ">
+        <Disclosure open={more} onToggle={() => setMore((v) => !v)} label="略称・由来・培地・メモ">
+          <Field label="略称（カレンダーの帯に表示）" hint="設定の「帯の表示」をライン名にしたときに使います。4 文字程度がおすすめです。">
+            <input className="input" value={form.shortName ?? ''} maxLength={8} onChange={(e) => set('shortName', e.target.value)} placeholder={form.name.replace(/\s+/g, '').slice(0, 4) || '回腸1'} />
+          </Field>
           <div className="grid grid-cols-2 gap-3">
             <Field label="由来・種類">
               <input className="input" value={form.origin} onChange={(e) => set('origin', e.target.value)} placeholder="ヒト回腸" />
@@ -144,7 +163,7 @@ export function LineForm({ id }: { id?: string }) {
           </Field>
         </Disclosure>
         {existing && (
-          <button type="button" className="min-h-11 w-full text-[15px] font-semibold text-rose-600" onClick={onDelete}>
+          <button type="button" className="min-h-11 w-full text-[15px] font-semibold text-danger" onClick={onDelete}>
             このラインを削除
           </button>
         )}

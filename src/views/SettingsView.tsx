@@ -6,6 +6,7 @@ import { todayStr } from '../lib/date'
 import type { AppData } from '../types'
 import { usePrefs } from '../store/usePrefs'
 import { List, PageTitle, Row, SectionLabel, Segmented } from '../components/ui'
+import { BrandLockup } from '../components/Brand'
 
 function download(filename: string, content: string, type: string) {
   const blob = new Blob([content], { type })
@@ -73,7 +74,7 @@ export function SettingsView() {
     }
   }
 
-  const { weekStartsOn, set: setPrefs } = usePrefs()
+  const { weekStartsOn, bandLabel, set: setPrefs } = usePrefs()
 
   return (
     <div>
@@ -87,7 +88,7 @@ export function SettingsView() {
           ['アッセイ', data.assays.length],
         ].map(([k, v]) => (
           <div key={k}>
-            <div className="text-[20px] font-bold">{v}</div>
+            <div className="font-num text-[20px] font-semibold tabular-nums">{v}</div>
             <div className="text-[12px] text-sub">{k}</div>
           </div>
         ))}
@@ -99,13 +100,20 @@ export function SettingsView() {
           <span className="flex-1 text-[15px] font-semibold">週の始まり</span>
           <Segmented value={String(weekStartsOn) as '0' | '1'} onChange={(v) => setPrefs({ weekStartsOn: v === '1' ? 1 : 0 })} options={[{ value: '0', label: '日曜' }, { value: '1', label: '月曜' }]} />
         </div>
+        <div className="flex min-h-14 items-center gap-3 px-4">
+          <span className="min-w-0 flex-1">
+            <span className="block text-[15px] font-semibold">カレンダーの帯</span>
+            <span className="block text-[12px] text-sub">帯に出す文字（色はいつもライン）</span>
+          </span>
+          <Segmented value={bandLabel} onChange={(v) => setPrefs({ bandLabel: v })} options={[{ value: 'type', label: '種類' }, { value: 'line', label: 'ライン名' }]} />
+        </div>
       </List>
 
       <SectionLabel>バックアップ</SectionLabel>
       <List>
-        <Row onClick={exportJson} left={<Download className="size-5 text-brand-700" />} title="バックアップを保存" sub="JSON ファイルとしてダウンロード" />
-        <Row onClick={() => fileRef.current?.click()} left={<Upload className="size-5 text-brand-700" />} title="バックアップから復元" sub="別の端末のデータを読み込む" />
-        <Row onClick={exportCsv} left={<FileSpreadsheet className="size-5 text-brand-700" />} title="記録を CSV で出力" sub="Excel で開けます" />
+        <Row onClick={exportJson} left={<Download className="size-5 text-teal-dark" />} title="バックアップを保存" sub="JSON ファイルとしてダウンロード" />
+        <Row onClick={() => fileRef.current?.click()} left={<Upload className="size-5 text-teal-dark" />} title="バックアップから復元" sub="別の端末のデータを読み込む" />
+        <Row onClick={exportCsv} left={<FileSpreadsheet className="size-5 text-teal-dark" />} title="記録を CSV で出力" sub="Excel で開けます" />
       </List>
       <p className="mt-2 px-1 text-[12px] leading-relaxed text-sub">
         データはこの端末のブラウザ内だけに保存されます。PC とスマホでは別々のデータになるため、移すときはバックアップを保存して、もう一方で復元してください。
@@ -152,11 +160,14 @@ export function SettingsView() {
               },
             })
           }
-          left={<Trash2 className="size-5 text-rose-600" />}
-          title={<span className="text-rose-600">すべてのデータを削除</span>}
+          left={<Trash2 className="size-5 text-danger" />}
+          title={<span className="text-danger">すべてのデータを削除</span>}
         />
       </List>
-      <p className="mt-6 text-center text-[12px] text-faint">Cellendar</p>
+      <div className="mt-8 flex flex-col items-center gap-1.5 text-center">
+        <BrandLockup size={22} />
+        <span className="text-[12px] text-faint">細胞培養・アッセイのスケジュール管理</span>
+      </div>
     </div>
   )
 }
