@@ -40,6 +40,8 @@
 }
 
 html, body, #root { height: 100%; }
+/* ダブルタップでの拡大を無効にし、続けてタップしたときに 2 回目の反応が待たされないようにする（ピンチでの拡大はできる） */
+html { touch-action: manipulation; }
 :root {
   --appbar-h: 52px;
   --tabbar-h: calc(72px + env(safe-area-inset-bottom));

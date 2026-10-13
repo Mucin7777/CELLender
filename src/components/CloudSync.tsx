@@ -86,7 +86,7 @@ export function CloudStatusButton({ variant }: { variant: 'icon' | 'row' }) {
 
 /** ログイン・新規登録のシート */
 export function LoginSheet({ mode: initialMode = 'signIn' }: { mode?: 'signIn' | 'signUp' }) {
-  const { close, toast } = useUI()
+  const { close, toast } = useUI(useShallow((s) => ({ close: s.close, toast: s.toast })))
   const [mode, setMode] = useState<'signIn' | 'signUp'>(initialMode)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')

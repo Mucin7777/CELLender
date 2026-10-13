@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { useShallow } from 'zustand/react/shallow'
 import { ChevronLeft, ChevronRight, Copy, FlaskConical, Plus } from 'lucide-react'
 import { useStore } from '../store/useStore'
 import { useUI } from '../store/useUI'
@@ -19,7 +20,7 @@ type Tab = 'active' | 'assays' | 'done'
 const isActive = (s: Seeding) => s.status === 'culturing' || s.status === 'assay_scheduled'
 
 function SeedingList() {
-  const { seedings, lines, assays } = useStore()
+  const { seedings, lines, assays } = useStore(useShallow((s) => ({ seedings: s.seedings, lines: s.lines, assays: s.assays })))
   const open = useUI((s) => s.open)
   const today = todayStr()
   const [tab, setTab] = useState<Tab>('active')
@@ -157,7 +158,7 @@ function AssayTab() {
 
 function SeedingDetail({ id }: { id: string }) {
   const st = useStore()
-  const { open, toast } = useUI()
+  const { open, toast } = useUI(useShallow((s) => ({ open: s.open, toast: s.toast })))
   const today = todayStr()
   const seeding = st.seedings.find((s) => s.id === id)
   const line = seeding ? st.lines.find((l) => l.id === seeding.lineId) : undefined

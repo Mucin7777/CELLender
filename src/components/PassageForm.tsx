@@ -1,11 +1,12 @@
 import { useState } from 'react'
+import { useShallow } from 'zustand/react/shallow'
 import { useStore } from '../store/useStore'
 import { useUI } from '../store/useUI'
 import { addDaysStr, fmt, todayStr } from '../lib/date'
 import { Chips, Disclosure, Field, LineDot, Sheet, Toggle } from './ui'
 
 export function PassageForm({ lineId }: { lineId: string }) {
-  const { close, open, toast } = useUI()
+  const { close, open, toast } = useUI(useShallow((s) => ({ close: s.close, open: s.open, toast: s.toast })))
   const line = useStore((s) => s.lines.find((l) => l.id === lineId))
   const recordPassage = useStore((s) => s.recordPassage)
   const interval = line?.passageIntervalDays ?? 0

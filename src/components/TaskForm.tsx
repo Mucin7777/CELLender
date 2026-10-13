@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useShallow } from 'zustand/react/shallow'
 import { useStore } from '../store/useStore'
 import { useUI } from '../store/useUI'
 import { fmt, todayStr } from '../lib/date'
@@ -6,11 +7,11 @@ import type { TaskKind } from '../types'
 import { Disclosure, Field, Segmented, Sheet } from './ui'
 
 export function TaskForm(props: { id?: string; date?: string; taskKind?: TaskKind; lineId?: string; seedingId?: string }) {
-  const { close, toast } = useUI()
+  const { close, toast } = useUI(useShallow((s) => ({ close: s.close, toast: s.toast })))
   const existing = useStore((s) => s.tasks.find((t) => t.id === props.id))
   const lines = useStore((s) => s.lines)
   const seedings = useStore((s) => s.seedings)
-  const { addTask, updateTask, deleteTask } = useStore()
+  const { addTask, updateTask, deleteTask } = useStore(useShallow((s) => ({ addTask: s.addTask, updateTask: s.updateTask, deleteTask: s.deleteTask })))
 
   const [form, setForm] = useState({
     date: existing?.date ?? props.date ?? todayStr(),

@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import { startOfWeek } from 'date-fns'
 import { ChevronLeft, ChevronRight, Plus } from 'lucide-react'
 import { useUI } from '../store/useUI'
@@ -7,7 +7,7 @@ import { useCalendarEvents } from '../lib/useCalendarEvents'
 import { addDaysStr, diffDays, fmt, fromDateStr, relativeLabel, toDateStr, todayStr } from '../lib/date'
 import { navigate } from '../lib/router'
 import { useSwipe } from '../lib/useSwipe'
-import type { DateStr } from '../types'
+import type { CalendarEvent, DateStr } from '../types'
 import { EventRow } from '../components/EventRow'
 import { BrandMark } from '../components/Brand'
 import { List, SectionLabel } from '../components/ui'
@@ -15,11 +15,28 @@ import { List, SectionLabel } from '../components/ui'
 const WD_EN = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT']
 const WD_JA = ['日', '月', '火', '水', '木', '金', '土']
 
+/**
+ * 並び順を画面を開いた時点で固定する（未完了が先）。
+ * 完了にした行がその場で下へ動くと、続けてチェックしたときに指の下へ別の行が来てしまうため。
+ * あとから増えた予定は末尾に足す。
+ */
+function useStableOrder(events: CalendarEvent[]): CalendarEvent[] {
+  const order = useRef(new Map<string, number>())
+  return useMemo(() => {
+    const m = order.current
+    for (const e of [...events].sort((a, b) => Number(a.done) - Number(b.done))) if (!m.has(e.key)) m.set(e.key, m.size)
+    return [...events].sort((a, b) => m.get(a.key)! - m.get(b.key)!)
+  }, [events])
+}
+
 /** カレンダーの日付をタップしたときの、その日の予定画面 */
 export function DayView({ date }: { date: DateStr }) {
   const today = todayStr()
   const events = useCalendarEvents()
-  const { open, calAnchor, setCalAnchor, setLastDay } = useUI()
+  const open = useUI((s) => s.open)
+  const calAnchor = useUI((s) => s.calAnchor)
+  const setCalAnchor = useUI((s) => s.setCalAnchor)
+  const setLastDay = useUI((s) => s.setLastDay)
   const weekStartsOn = usePrefs((s) => s.weekStartsOn)
   const d = fromDateStr(date)
 
@@ -32,10 +49,19 @@ export function DayView({ date }: { date: DateStr }) {
   }, [date, calAnchor, today, weekStartsOn, setLastDay, setCalAnchor])
 
   const dayEvents = useMemo(() => events.filter((e) => e.date === date), [events, date])
-  const overdue = useMemo(
-    () => (date === today ? events.filter((e) => !e.done && e.date < today && e.type !== 'seeding' && e.type !== 'passage_done') : []),
-    [events, date, today],
-  )
+  // 遅れていたものは、チェックしてもこの画面にいる間は（取り消し線つきで）残す。行が消えて下の行が詰まってこないように
+  const seenOverdue = useRef(new Set<string>())
+  const overdue = useMemo(() => {
+    if (date !== today) return []
+    const seen = seenOverdue.current
+    return events.filter((e) => {
+      if (e.date >= today || e.type === 'seeding' || e.type === 'passage_done') return false
+      if (!e.done) seen.add(e.key)
+      return seen.has(e.key)
+    })
+  }, [events, date, today])
+  const pendingOverdue = overdue.filter((e) => !e.done).length
+  const sortedDay = useStableOrder(dayEvents)
   const tracked = dayEvents.filter((e) => e.type !== 'seeding')
   const doneCount = tracked.filter((e) => e.done).length
   const pct = tracked.length ? Math.round((doneCount / tracked.length) * 100) : 0
@@ -74,7 +100,8 @@ export function DayView({ date }: { date: DateStr }) {
       {tracked.length > 0 && (
         <div className="mt-4 flex items-center gap-3 px-1" aria-label={`完了 ${doneCount} / ${tracked.length}`}>
           <div className="h-[5px] flex-1 overflow-hidden rounded-full bg-mint-soft">
-            <div className="h-full rounded-full bg-teal transition-all duration-300" style={{ width: `${pct}%` }} />
+            {/* 幅ではなく transform で伸ばす（幅のアニメーションは毎フレーム配置の再計算が走って重い） */}
+            <div className="h-full origin-left rounded-full bg-teal transition-transform duration-300" style={{ transform: `scaleX(${pct / 100})` }} />
           </div>
           <span className="font-num text-[13px] font-semibold tabular-nums text-sub">
             {doneCount} / {tracked.length}
@@ -84,10 +111,10 @@ export function DayView({ date }: { date: DateStr }) {
 
       {overdue.length > 0 && (
         <>
-          <SectionLabel tone="danger">遅れているもの {overdue.length}</SectionLabel>
+          <SectionLabel tone={pendingOverdue ? 'danger' : undefined}>{pendingOverdue ? `遅れているもの ${pendingOverdue}` : '遅れていたもの（すべて完了）'}</SectionLabel>
           <List>
             {overdue.map((e) => (
-              <EventRow key={e.key} event={e} prefix={fmt(e.date, 'M/d')} overdue />
+              <EventRow key={e.key} event={e} prefix={fmt(e.date, 'M/d')} overdue={!e.done} />
             ))}
           </List>
         </>
@@ -107,11 +134,9 @@ export function DayView({ date }: { date: DateStr }) {
         <>
           <SectionLabel>予定</SectionLabel>
           <List>
-            {[...dayEvents]
-              .sort((a, b) => Number(a.done) - Number(b.done))
-              .map((e) => (
-                <EventRow key={e.key} event={e} />
-              ))}
+            {sortedDay.map((e) => (
+              <EventRow key={e.key} event={e} />
+            ))}
           </List>
           <button className="btn-secondary mt-3 w-full" onClick={() => open({ kind: 'add', date })}>
             <Plus className="size-4" />

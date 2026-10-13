@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { useShallow } from 'zustand/react/shallow'
 import { addDays, startOfWeek } from 'date-fns'
 import { Check as CheckIcon, ChevronLeft, ChevronRight, Cloud, Plus, Sparkles } from 'lucide-react'
 import { useCloud } from '../lib/cloud/sync'
@@ -12,7 +13,7 @@ import { navigate } from '../lib/router'
 import { useSwipe } from '../lib/useSwipe'
 import type { CalendarEvent, CellLine, DateStr } from '../types'
 import { bandLook } from '../components/EventRow'
-import { BrandMark } from '../components/Brand'
+import { BrandLogo } from '../components/Brand'
 import { LineDot, List, cx } from '../components/ui'
 
 const WD_EN = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT']
@@ -52,8 +53,8 @@ export function CalendarView() {
   const lines = useStore((s) => s.lines)
   const loadSample = useStore((s) => s.loadSample)
   const events = useCalendarEvents()
-  const { open, calAnchor, setCalAnchor, lastDay } = useUI()
-  const { weekStartsOn, bandLabel } = usePrefs()
+  const { open, calAnchor, setCalAnchor, lastDay } = useUI(useShallow((s) => ({ open: s.open, calAnchor: s.calAnchor, setCalAnchor: s.setCalAnchor, lastDay: s.lastDay })))
+  const { weekStartsOn, bandLabel } = usePrefs(useShallow((s) => ({ weekStartsOn: s.weekStartsOn, bandLabel: s.bandLabel })))
   const anchor = calAnchor ?? today
   const days = useMemo(() => periodDays(anchor, weekStartsOn), [anchor, weekStartsOn])
   const byDate = useMemo(() => groupByDate(events), [events])
@@ -170,6 +171,7 @@ function DayCell({
         'group flex min-h-0 min-w-0 flex-col items-stretch gap-[3px] overflow-hidden border-b border-hair px-[3px] pb-1 pt-1.5 text-left transition',
         !lastCol && 'border-r border-r-[#EDF3F0]',
         isSelected ? 'bg-mint-soft' : isToday ? 'bg-[#F4FAF7]' : 'bg-white hover:bg-mint-soft/50',
+        'active:bg-mint',
         'focus-visible:-outline-offset-2',
       )}
     >
@@ -232,9 +234,9 @@ function Legend({ lines }: { lines: CellLine[] }) {
 function Welcome({ onSample, onAdd, onLogin, canLogin }: { onSample: () => void; onAdd: () => void; onLogin: () => void; canLogin: boolean }) {
   return (
     <div className="mx-auto flex max-w-xl flex-col items-center pt-6 text-center">
-      <BrandMark size={128} />
-      <h1 className="mt-5 text-[26px] font-bold leading-tight">
-        <span className="font-num font-semibold">cellender</span> へようこそ
+      <h1 className="flex flex-col items-center pt-4 text-[22px] font-bold leading-tight">
+        <BrandLogo height={60} className="max-w-full" />
+        <span className="mt-4">へようこそ</span>
       </h1>
       <p className="mt-2 max-w-xs text-[14px] leading-relaxed text-sub">
         継代・播種・アッセイの予定を、

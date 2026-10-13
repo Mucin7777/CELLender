@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useShallow } from 'zustand/react/shallow'
 import { Plus, X } from 'lucide-react'
 import { useStore, type NewSeeding } from '../store/useStore'
 import { useUI, confirmDialog } from '../store/useUI'
@@ -16,10 +17,10 @@ interface AssayDraft {
 let draftSeq = 0
 
 export function SeedingForm({ id, lineId, date }: { id?: string; lineId?: string; date?: string }) {
-  const { close, toast, open } = useUI()
+  const { close, toast, open } = useUI(useShallow((s) => ({ close: s.close, toast: s.toast, open: s.open })))
   const lines = useStore((s) => s.lines)
   const existing = useStore((s) => s.seedings.find((x) => x.id === id))
-  const { addSeeding, updateSeeding, deleteSeeding, addAssay, addTask } = useStore()
+  const { addSeeding, updateSeeding, deleteSeeding, addAssay, addTask } = useStore(useShallow((s) => ({ addSeeding: s.addSeeding, updateSeeding: s.updateSeeding, deleteSeeding: s.deleteSeeding, addAssay: s.addAssay, addTask: s.addTask })))
   const activeLines = lines.filter((l) => !l.archived || l.id === existing?.lineId)
   const initialLine = lines.find((l) => l.id === (existing?.lineId ?? lineId)) ?? activeLines[0]
 

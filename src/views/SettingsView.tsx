@@ -1,4 +1,5 @@
 import { useRef } from 'react'
+import { BrandLogo } from '../components/Brand'
 import { Download, FileSpreadsheet, Sparkles, Trash2, Upload } from 'lucide-react'
 import { useStore, selectData } from '../store/useStore'
 import { useUI, confirmDialog } from '../store/useUI'
@@ -169,9 +170,10 @@ export function SettingsView() {
           title={<span className="text-danger">すべてのデータを削除</span>}
         />
       </List>
-      <p className="mt-8 text-center text-[12px] text-faint">
-        <span className="font-num font-semibold">cellender</span> · 細胞培養・アッセイのスケジュール管理
-      </p>
+      <div className="mt-8 flex flex-col items-center gap-2 text-center text-[12px] text-faint">
+        <BrandLogo height={22} />
+        <p>細胞培養・アッセイのスケジュール管理</p>
+      </div>
     </div>
   )
 }

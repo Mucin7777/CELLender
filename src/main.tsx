@@ -9,6 +9,9 @@ import { initPwa } from './lib/pwa'
 import { initNotifications } from './lib/notify'
 import { useUI } from './store/useUI'
 
+// iPhone の Safari はタッチの受け口がないと :active（押した瞬間の見た目）を出さないため、空の受け口を置く
+document.addEventListener('touchstart', () => {}, { passive: true })
+
 // ホーム画面（PWA）：Service Worker を登録し、新しい版の準備ができたら知らせる（切り替えは設定から）
 void initPwa(() => useUI.getState().toast('新しいバージョンがあります', { label: '設定を開く', onClick: () => (window.location.hash = '#/settings') }))
 initNotifications()

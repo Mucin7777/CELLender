@@ -1,4 +1,5 @@
 import type { CSSProperties } from 'react'
+import { useShallow } from 'zustand/react/shallow'
 import { Beaker, Check as CheckIcon, CheckCircle2, ChevronRight, Droplets, FlaskConical, GitBranch, ListTodo } from 'lucide-react'
 import type { CalendarEvent, CalendarEventType, CellLine } from '../types'
 import { useStore } from '../store/useStore'
@@ -20,7 +21,7 @@ export const EVENT_ICONS: Record<CalendarEventType, typeof Beaker> = {
 export const isCheckable = (e: CalendarEvent) => e.type === 'assay' || e.type === 'medium' || e.type === 'other'
 
 export function useToggleDone() {
-  const { setAssayDone, updateTask } = useStore()
+  const { setAssayDone, updateTask } = useStore(useShallow((s) => ({ setAssayDone: s.setAssayDone, updateTask: s.updateTask })))
   return (e: CalendarEvent) => {
     if (e.type === 'assay') setAssayDone(e.refId, !e.done)
     else if (e.type === 'medium' || e.type === 'other') updateTask(e.refId, { done: !e.done })
@@ -104,7 +105,7 @@ export function EventRow({ event, prefix, overdue }: { event: CalendarEvent; pre
       <button
         type="button"
         onClick={() => open({ kind: 'event', event })}
-        className="-my-1 flex min-w-0 flex-1 items-center gap-3 rounded-xl py-1 text-left"
+        className="-my-1 flex min-w-0 flex-1 items-center gap-3 rounded-xl py-1 text-left transition active:opacity-60"
         aria-label={`${event.title} ${meta.label}の詳細`}
       >
         <EventTile event={event} line={line} />
@@ -134,7 +135,7 @@ function RowAction({ event, onToggle, onPassage }: { event: CalendarEvent; onTog
         title="継代を記録"
         className="group -m-2.5 flex size-11 shrink-0 items-center justify-center"
       >
-        <span className="flex size-6 items-center justify-center rounded-full border-2 border-gray-sage bg-white text-teal transition group-hover:border-teal group-hover:bg-mint-soft">
+        <span className="flex size-6 items-center justify-center rounded-full border-2 border-gray-sage bg-white text-teal transition group-hover:border-teal group-hover:bg-mint-soft group-active:scale-90">
           <CheckIcon className="size-3.5 opacity-0 transition group-hover:opacity-100" strokeWidth={3} />
         </span>
       </button>

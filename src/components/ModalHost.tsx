@@ -1,4 +1,5 @@
 import { useUI, type ModalState } from '../store/useUI'
+import { useShallow } from 'zustand/react/shallow'
 import { AddSheet } from './AddSheet'
 import { AssayForm } from './AssayForm'
 import { EventDetail } from './EventDetail'
@@ -69,7 +70,7 @@ export function ModalHost() {
 }
 
 export function Toaster() {
-  const { toasts, dismissToast } = useUI()
+  const { toasts, dismissToast } = useUI(useShallow((s) => ({ toasts: s.toasts, dismissToast: s.dismissToast })))
   return (
     <div className="pointer-events-none fixed inset-x-0 bottom-[calc(84px+env(safe-area-inset-bottom))] z-[60] flex flex-col items-center gap-2 px-4 lg:bottom-6">
       {toasts.map((t) => (

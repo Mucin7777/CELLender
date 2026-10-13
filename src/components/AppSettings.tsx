@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useShallow } from 'zustand/react/shallow'
 import { BellRing, Download, RefreshCw, Smartphone } from 'lucide-react'
 import { usePrefs } from '../store/usePrefs'
 import { useUI } from '../store/useUI'
@@ -22,7 +23,7 @@ import { List, Row, SectionLabel, Toggle } from './ui'
 /** 設定：アプリ（ホーム画面への追加・更新・起動演出） */
 export function AppSection() {
   const { updateReady, canInstall } = usePwa()
-  const { splash, set } = usePrefs()
+  const { splash, set } = usePrefs(useShallow((s) => ({ splash: s.splash, set: s.set })))
   const toast = useUI((s) => s.toast)
   const standalone = isStandalone()
   const [updating, setUpdating] = useState(false)
