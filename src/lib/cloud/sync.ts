@@ -211,7 +211,19 @@ export class SyncEngine {
     return res
   }
 
+  invoke<T>(name: string, body: unknown): Promise<T> {
+    return this.backend.invoke<T>(name, body)
+  }
+
   async signOut(): Promise<void> {
+    // ログアウト前の後始末（通知の購読解除など）。失敗してもログアウトは続ける
+    for (const hook of beforeSignOutHooks) {
+      try {
+        await hook()
+      } catch {
+        /* 続ける */
+      }
+    }
     // 送り残しがあれば先に送る
     if (this.timer) {
       clearTimeout(this.timer)
@@ -407,6 +419,13 @@ export class SyncEngine {
 
 // ---------- アプリ全体で 1 つの同期エンジン ----------
 
+const beforeSignOutHooks = new Set<() => Promise<void>>()
+/** ログアウトの直前に実行する処理を登録する */
+export function onBeforeSignOut(hook: () => Promise<void>): () => void {
+  beforeSignOutHooks.add(hook)
+  return () => beforeSignOutHooks.delete(hook)
+}
+
 let engine: SyncEngine | null = null
 let starting: Promise<SyncEngine | null> | null = null
 
@@ -445,4 +464,8 @@ export const cloud = {
   signOut: () => engine?.signOut() ?? Promise.resolve(),
   syncNow: () => engine?.syncNow() ?? Promise.resolve(),
   resolveConflict: (c: 'remote' | 'local') => engine?.resolveConflict(c) ?? Promise.resolve(),
+  invoke: <T,>(name: string, body: unknown): Promise<T> => {
+    if (!engine) return Promise.reject(new CloudError('クラウドに接続できません', 'network'))
+    return engine.invoke<T>(name, body)
+  },
 }

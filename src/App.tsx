@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { Plus } from 'lucide-react'
 import { useRoute, navigate, type Route } from './lib/router'
 import { useStore } from './store/useStore'
@@ -7,6 +7,7 @@ import { todayStr } from './lib/date'
 import { ModalHost, Toaster } from './components/ModalHost'
 import { BrandLockup } from './components/Brand'
 import { CloudStatusButton, SyncConflictDialog } from './components/CloudSync'
+import { Splash, shouldShowSplash } from './components/Splash'
 import { NavIcon, type NavIconName } from './components/NavIcon'
 import { cx } from './components/ui'
 import { CalendarView } from './views/CalendarView'
@@ -44,6 +45,7 @@ export default function App() {
   const route = useRoute()
   const open = useUI((s) => s.open)
   const due = useDueCount()
+  const [splash, setSplash] = useState(shouldShowSplash)
   const current = tabOf(route)
   const isCalendar = route.view === 'home'
   // 一覧（タブの最上位）ではヘッダーにブランドを出す。詳細画面は戻るボタンが見出し代わり
@@ -162,6 +164,7 @@ export default function App() {
       <ModalHost />
       <SyncConflictDialog />
       <Toaster />
+      {splash && <Splash onDone={() => setSplash(false)} />}
     </div>
   )
 }

@@ -96,6 +96,10 @@ export class FakeBackend implements CloudBackend {
   subscribe(userId: string, cb: () => void) {
     return this.server.listen(userId, cb)
   }
+  async invoke<T>(): Promise<T> {
+    this.net()
+    return { ready: false, publicKey: null } as T
+  }
 }
 
 /** オブジェクトのキーを逆順に並べ替えた複製（jsonb のキー並べ替えの再現） */

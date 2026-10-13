@@ -7,6 +7,8 @@ interface Prefs {
   weekStartsOn: 0 | 1
   /** カレンダーの帯に出す文字：種類（継代・播種…）かラインの略称か */
   bandLabel: BandLabelMode
+  /** 起動時のシンボル演出 */
+  splash: boolean
   set: (p: Partial<Omit<Prefs, 'set'>>) => void
 }
 
@@ -15,8 +17,9 @@ export const usePrefs = create<Prefs>()(
     (set) => ({
       weekStartsOn: 0,
       bandLabel: 'type',
+      splash: true,
       set: (p) => set(p),
     }),
-    { name: 'cellendar-prefs-v2', version: 2, migrate: (old) => ({ weekStartsOn: 0, bandLabel: 'type', ...(old as object) }) as Prefs },
+    { name: 'cellendar-prefs-v2', version: 3, migrate: (old) => ({ weekStartsOn: 0, bandLabel: 'type', splash: true, ...(old as object) }) as Prefs },
   ),
 )

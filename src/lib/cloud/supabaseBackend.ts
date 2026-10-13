@@ -75,6 +75,22 @@ export async function createSupabaseBackend(): Promise<CloudBackend> {
     },
     fetchDoc,
     saveDoc,
+    async invoke<T>(name: string, body: unknown): Promise<T> {
+      const { data, error } = await sb.functions.invoke(name, { body: body as Record<string, unknown> })
+      if (error) {
+        // 関数が返したエラー内容があればそれを使う
+        const ctx = (error as { context?: Response }).context
+        let detail = ''
+        try {
+          detail = ctx ? ((await ctx.clone().json()) as { error?: string }).error ?? '' : ''
+        } catch {
+          /* 本文なし */
+        }
+        const status = ctx?.status
+        throw Object.assign(toCloudError(new Error(detail || error.message)), { status })
+      }
+      return data as T
+    },
     subscribe(userId, cb) {
       const channel = sb
         .channel(`cellender-${userId}`)

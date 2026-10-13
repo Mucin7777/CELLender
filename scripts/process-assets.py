@@ -12,6 +12,7 @@
   src/assets/icons/{calendar,cells,seeding,settings}-{default,active}.png  … ナビ用
   src/assets/brand/cellender-symbol.png                                     … ヘッダー・空状態用
   public/favicon-16.png, favicon-32.png, favicon.ico, apple-touch-icon.png   … アプリアイコン
+  public/icon-192.png, icon-512.png, icon-maskable-512.png                   … ホーム画面（PWA）用
 
 使い方:  python3 scripts/process-assets.py
 """
@@ -121,6 +122,17 @@ def main() -> None:
         PUBLIC / "apple-touch-icon.png", optimize=True
     )
     print("public favicon-16.png favicon-32.png favicon.ico apple-touch-icon.png")
+
+    # ホーム画面（PWA）用。any はオフホワイト地に余白 15%、maskable は OS の丸や角丸の切り抜きでも
+    # 欠けないよう、中央 80% の安全領域にシンボル（60%）を収める
+    for px in (192, 512):
+        fit(symbol, px * 2, 0.72, bg=OFF_WHITE).resize((px, px), Image.Resampling.LANCZOS).convert("RGB").save(
+            PUBLIC / f"icon-{px}.png", optimize=True
+        )
+    fit(symbol, 1024, 0.60, bg=OFF_WHITE).resize((512, 512), Image.Resampling.LANCZOS).convert("RGB").save(
+        PUBLIC / "icon-maskable-512.png", optimize=True
+    )
+    print("public icon-192.png icon-512.png icon-maskable-512.png")
 
 
 if __name__ == "__main__":
