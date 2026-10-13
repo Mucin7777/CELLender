@@ -44,7 +44,7 @@ function ConfirmDialog({ title, message, confirmLabel, danger, onConfirm }: Extr
             キャンセル
           </button>
           <button
-            className={danger ? 'min-h-12 text-[16px] font-bold text-rose-600' : 'min-h-12 text-[16px] font-bold text-brand-700'}
+            className={danger ? 'min-h-12 text-[16px] font-bold text-danger' : 'min-h-12 text-[16px] font-bold text-teal-dark'}
             onClick={() => {
               close()
               onConfirm()
@@ -74,7 +74,7 @@ export function Toaster() {
           <span className="flex-1">{t.message}</span>
           {t.action && (
             <button
-              className="min-h-9 shrink-0 rounded-xl px-3 font-semibold text-brand-200 active:bg-white/10"
+              className="min-h-9 shrink-0 rounded-xl px-3 font-semibold text-mint active:bg-white/10"
               onClick={() => {
                 t.action!.onClick()
                 dismissToast(t.id)

@@ -90,7 +90,7 @@ export function TaskForm(props: { id?: string; date?: string; taskKind?: TaskKin
         {existing && (
           <button
             type="button"
-            className="min-h-11 w-full text-[15px] font-semibold text-rose-600"
+            className="min-h-11 w-full text-[15px] font-semibold text-danger"
             onClick={() => {
               deleteTask(existing.id)
               useUI.getState().closeAll()

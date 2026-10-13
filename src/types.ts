@@ -4,6 +4,8 @@ export type DateStr = string
 export interface CellLine {
   id: string
   name: string
+  /** カレンダーの帯に出す略称（任意。未設定なら名前から作る） */
+  shortName?: string
   /** 由来・種（例: ヒト回腸、マウス、株化細胞） */
   origin: string
   lot: string
@@ -97,6 +99,8 @@ export interface CalendarEvent {
   seedingId?: string
   refId: string
   done: boolean
-  /** ドラッグで日付変更が可能か */
+  /** 日付の変更が可能か */
   movable: boolean
+  /** 時刻（アッセイのみ。'HH:mm'） */
+  time?: string
 }

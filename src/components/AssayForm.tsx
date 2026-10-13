@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { useStore } from '../store/useStore'
 import { useUI, confirmDialog } from '../store/useUI'
 import { ASSAY_PRESETS } from '../lib/constants'
-import { cultureDay, fmt, todayStr } from '../lib/date'
+import { cultureLabel, fmt, todayStr } from '../lib/date'
 import { Chips, Disclosure, Field, LineDot, Sheet, Toggle, cx } from './ui'
 
 export function AssayForm({ id, seedingId, date }: { id?: string; seedingId?: string; date?: string }) {
@@ -83,13 +83,13 @@ export function AssayForm({ id, seedingId, date }: { id?: string; seedingId?: st
                   key={s.id}
                   type="button"
                   onClick={() => set('seedingId', s.id)}
-                  className={cx('flex min-h-12 w-full items-center gap-3 rounded-xl px-3.5 text-left transition', sel ? 'bg-ink text-white' : 'bg-canvas')}
+                  className={cx('flex min-h-12 w-full items-center gap-3 rounded-xl px-3.5 text-left transition', sel ? 'bg-mint text-teal-dark shadow-[inset_0_0_0_1.5px_var(--color-teal)]' : 'bg-field hover:bg-mint-soft')}
                 >
                   {l && <LineDot color={l.color} />}
                   <span className="min-w-0 flex-1 truncate text-[14px] font-semibold">
                     {l?.name} · {s.plateType}
                   </span>
-                  <span className={cx('shrink-0 text-[12px]', sel ? 'text-white/70' : 'text-sub')}>{fmt(s.date, 'M/d')} 播種</span>
+                  <span className={cx('shrink-0 text-[12px]', sel ? 'text-teal-dark' : 'text-sub')}>{fmt(s.date, 'M/d')} 播種</span>
                 </button>
               )
             })}
@@ -100,7 +100,7 @@ export function AssayForm({ id, seedingId, date }: { id?: string; seedingId?: st
           <input className="input" value={form.name} onChange={(e) => set('name', e.target.value)} placeholder="例: TEER 測定" required />
           <Chips options={ASSAY_PRESETS} value={form.name} onPick={(v) => set('name', v)} />
         </div>
-        <Field label="実施日" hint={seeding ? `播種から ${cultureDay(seeding.date, form.date)} 日目` : undefined}>
+        <Field label="実施日" hint={seeding ? `播種から ${cultureLabel(seeding.date, form.date)}` : undefined}>
           <input className="input" type="date" value={form.date} onChange={(e) => set('date', e.target.value)} required />
         </Field>
         <Disclosure open={more} onToggle={() => setMore((v) => !v)} label="時刻・条件メモ">
@@ -119,7 +119,7 @@ export function AssayForm({ id, seedingId, date }: { id?: string; seedingId?: st
             </Field>
             <button
               type="button"
-              className="min-h-11 w-full text-[15px] font-semibold text-rose-600"
+              className="min-h-11 w-full text-[15px] font-semibold text-danger"
               onClick={() =>
                 confirmDialog({
                   title: 'このアッセイを削除しますか？',

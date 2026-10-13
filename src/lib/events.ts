@@ -68,6 +68,7 @@ export function buildCalendarEvents(data: AppData): CalendarEvent[] {
       refId: a.id,
       done: a.done,
       movable: !a.done,
+      time: a.time || undefined,
     })
   }
 

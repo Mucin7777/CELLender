@@ -2,9 +2,10 @@ import { useMemo, useState } from 'react'
 import { ChevronLeft, FlaskConical, GitBranch, Plus } from 'lucide-react'
 import { useStore } from '../store/useStore'
 import { useUI, confirmDialog } from '../store/useUI'
-import { cultureDay, diffDays, fmt, relativeLabel, todayStr } from '../lib/date'
+import { cultureLabel, diffDays, fmt, relativeLabel, todayStr } from '../lib/date'
 import { navigate } from '../lib/router'
 import type { CellLine } from '../types'
+import { lineTone } from '../lib/color'
 import { EmptyState, List, PageTitle, Row, SectionLabel, StatusBadge, cx } from '../components/ui'
 
 export function LinesView({ id }: { id?: string }) {
@@ -16,7 +17,7 @@ export function DuePill({ line }: { line: CellLine }) {
   if (!line.nextPassageDate) return <span className="text-[13px] text-faint">予定なし</span>
   const d = diffDays(todayStr(), line.nextPassageDate)
   const [label, cls] =
-    d < 0 ? [`${-d}日超過`, 'bg-rose-50 text-rose-600'] : d === 0 ? ['今日', 'bg-amber-50 text-amber-700'] : d === 1 ? ['明日', 'bg-canvas text-ink'] : [`${d}日後`, 'text-sub']
+    d < 0 ? [`${-d}日超過`, 'bg-danger-soft text-danger'] : d === 0 ? ['今日', 'bg-amber-50 text-amber-700'] : d === 1 ? ['明日', 'bg-mint-soft text-ink'] : [`${d}日後`, 'text-sub']
   return <span className={cx('shrink-0 rounded-full px-2 py-0.5 text-[13px] font-semibold', cls)}>{label}</span>
 }
 
@@ -24,8 +25,8 @@ export function DuePill({ line }: { line: CellLine }) {
 export function PBadge({ line, size = 'md' }: { line: CellLine; size?: 'md' | 'lg' }) {
   return (
     <span
-      className={cx('flex shrink-0 items-center justify-center rounded-xl font-mono font-bold', size === 'lg' ? 'h-14 min-w-14 px-2 text-[20px]' : 'h-10 min-w-10 px-1 text-[13px]')}
-      style={{ backgroundColor: `${line.color}1a`, color: line.color }}
+      className={cx('flex shrink-0 items-center justify-center rounded-xl font-num font-semibold tabular-nums', size === 'lg' ? 'h-14 min-w-14 px-2 text-[20px]' : 'h-10 min-w-10 px-1 text-[13px]')}
+      style={{ backgroundColor: lineTone(line.color).pale, color: lineTone(line.color).deep }}
     >
       P{line.passageNumber}
     </span>
@@ -48,7 +49,7 @@ function LineList() {
       <PageTitle
         title="細胞ライン"
         right={
-          <button className="icon-btn bg-white text-brand-700" onClick={() => open({ kind: 'line' })} aria-label="ラインを追加">
+          <button className="icon-btn border border-hair bg-white text-teal-dark" onClick={() => open({ kind: 'line' })} aria-label="ラインを追加">
             <Plus className="size-5" />
           </button>
         }
@@ -111,7 +112,7 @@ function LineDetail({ id }: { id: string }) {
   const [allHistory, setAllHistory] = useState(false)
 
   const back = (
-    <button className="flex min-h-11 items-center px-2 text-[15px] font-semibold text-brand-700" onClick={() => navigate({ view: 'lines' })}>
+    <button className="flex min-h-11 items-center px-2 text-[15px] font-semibold text-teal-dark" onClick={() => navigate({ view: 'lines' })}>
       <ChevronLeft className="size-5" />
       細胞ライン
     </button>
@@ -164,7 +165,7 @@ function LineDetail({ id }: { id: string }) {
           <span className="flex-1 text-[15px] font-semibold">次回の予定日</span>
           <input
             type="date"
-            className="rounded-lg bg-canvas px-2 py-1.5 text-[15px] outline-none focus:ring-2 focus:ring-brand-500"
+            className="rounded-lg bg-canvas px-2 py-1.5 text-[15px] outline-none focus:ring-2 focus:ring-teal"
             value={line.nextPassageDate ?? ''}
             onChange={(e) => st.updateLine(line.id, { nextPassageDate: e.target.value || null })}
           />
@@ -177,7 +178,7 @@ function LineDetail({ id }: { id: string }) {
 
       <SectionLabel
         right={!line.archived && (
-          <button className="flex min-h-9 items-center gap-0.5 text-[13px] font-semibold text-brand-700" onClick={() => open({ kind: 'seeding', lineId: line.id })}>
+          <button className="flex min-h-9 items-center gap-0.5 text-[13px] font-semibold text-teal-dark" onClick={() => open({ kind: 'seeding', lineId: line.id })}>
             <Plus className="size-4" />
             播種
           </button>
@@ -196,7 +197,7 @@ function LineDetail({ id }: { id: string }) {
                 key={s.id}
                 onClick={() => navigate({ view: 'seedings', id: s.id })}
                 title={`${fmt(s.date, 'M/d')} · ${s.plateType}`}
-                sub={[active && `${cultureDay(s.date, today)}日目`, s.purpose].filter(Boolean).join(' · ') || undefined}
+                sub={[active && cultureLabel(s.date, today), s.purpose].filter(Boolean).join(' · ') || undefined}
                 right={<StatusBadge status={s.status} />}
                 chevron
               />
@@ -213,7 +214,7 @@ function LineDetail({ id }: { id: string }) {
           {(allHistory ? passages : passages.slice(0, 5)).map((p, i) => (
             <Row
               key={p.id}
-              left={<span className={cx('w-12 font-mono text-[14px] font-bold', i === 0 ? '' : 'text-sub')} style={i === 0 ? { color: line.color } : undefined}>P{p.passageNumber}</span>}
+              left={<span className={cx('w-12 font-num text-[14px] font-semibold tabular-nums', i === 0 ? '' : 'text-sub')} style={i === 0 ? { color: lineTone(line.color).deep } : undefined}>P{p.passageNumber}</span>}
               title={fmt(p.date, 'yyyy/M/d (E)')}
               sub={[p.splitRatio, p.notes].filter(Boolean).join(' · ') || undefined}
               right={
@@ -240,7 +241,7 @@ function LineDetail({ id }: { id: string }) {
             />
           ))}
           {passages.length > 5 && !allHistory && (
-            <button className="min-h-12 w-full text-[14px] font-semibold text-brand-700" onClick={() => setAllHistory(true)}>
+            <button className="min-h-12 w-full text-[14px] font-semibold text-teal-dark" onClick={() => setAllHistory(true)}>
               すべて表示（{passages.length}件）
             </button>
           )}

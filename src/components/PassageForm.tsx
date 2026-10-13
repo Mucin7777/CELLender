@@ -47,9 +47,9 @@ export function PassageForm({ lineId }: { lineId: string }) {
             <div className="truncate font-semibold">{line.name}</div>
             <div className="text-[13px] text-sub">{line.lastPassageDate ? `前回 ${fmt(line.lastPassageDate)}` : '継代記録なし'}</div>
           </div>
-          <div className="font-mono text-[15px]">
+          <div className="font-num text-[15px]">
             <span className="text-faint">P{line.passageNumber} → </span>
-            <span className="font-bold text-brand-700">P{line.passageNumber + 1}</span>
+            <span className="font-bold text-teal-dark">P{line.passageNumber + 1}</span>
           </div>
         </div>
         <div className="grid grid-cols-2 gap-3">

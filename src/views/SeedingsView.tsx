@@ -3,12 +3,13 @@ import { ChevronLeft, ChevronRight, Copy, FlaskConical, Plus } from 'lucide-reac
 import { useStore } from '../store/useStore'
 import { useUI } from '../store/useUI'
 import { SEEDING_STATUS_META } from '../lib/constants'
-import { addDaysStr, cultureDay, fmt, relativeLabel, todayStr } from '../lib/date'
+import { addDaysStr, cultureDay, cultureLabel, fmt, relativeLabel, todayStr } from '../lib/date'
 import { navigate } from '../lib/router'
 import { useCalendarEvents } from '../lib/useCalendarEvents'
 import type { Seeding, SeedingStatus } from '../types'
-import { AgendaRow } from '../components/Agenda'
-import { Check, EmptyState, List, PageTitle, Row, SectionLabel, Segmented, StatusBadge, cx } from '../components/ui'
+import { EventRow } from '../components/EventRow'
+import { lineTone } from '../lib/color'
+import { Check, EmptyState, LineDot, List, PageTitle, Row, SectionLabel, Segmented, StatusBadge, cx } from '../components/ui'
 
 export function SeedingsView({ id }: { id?: string }) {
   return id ? <SeedingDetail id={id} /> : <SeedingList />
@@ -34,7 +35,7 @@ function SeedingList() {
       <PageTitle
         title="播種"
         right={
-          <button className="icon-btn bg-white text-brand-700" onClick={() => open({ kind: 'seeding' })} aria-label="播種を記録">
+          <button className="icon-btn border border-hair bg-white text-teal-dark" onClick={() => open({ kind: 'seeding' })} aria-label="播種を記録">
             <Plus className="size-5" />
           </button>
         }
@@ -72,12 +73,12 @@ function SeedingList() {
               <button key={s.id} onClick={() => navigate({ view: 'seedings', id: s.id })} className="flex w-full items-center gap-3 px-4 py-3 text-left transition active:bg-black/[.03]">
                 <span
                   className="flex size-12 shrink-0 flex-col items-center justify-center rounded-xl leading-none"
-                  style={{ backgroundColor: `${line?.color ?? '#9ca3af'}1a`, color: line?.color ?? '#6b7280' }}
+                  style={{ backgroundColor: lineTone(line?.color).pale, color: lineTone(line?.color).deep }}
                 >
                   {active ? (
                     <>
-                      <span className="text-[18px] font-bold">{cultureDay(s.date, today)}</span>
-                      <span className="mt-0.5 text-[10px] font-semibold">日目</span>
+                      <span className="font-num text-[18px] font-semibold tabular-nums">{Math.abs(cultureDay(s.date, today))}</span>
+                      <span className="mt-0.5 text-[10px] font-bold">{cultureDay(s.date, today) < 0 ? '日後' : '日目'}</span>
                     </>
                   ) : (
                     <span className="text-[13px] font-bold">{fmt(s.date, 'M/d')}</span>
@@ -125,12 +126,12 @@ function AssayTab() {
   return (
     <div>
       {groups.length === 0 && <div className="group-card py-8 text-center text-[14px] text-sub">予定されているアッセイはありません</div>}
-      {groups.map((g) => (
-        <div key={g.title}>
+      {groups.map((g, gi) => (
+        <div key={g.title} className={gi > 0 ? 'mt-6' : undefined}>
           <SectionLabel tone={g.tone}>{g.title}</SectionLabel>
           <List>
             {g.items.map((e) => (
-              <AgendaRow key={e.key} event={e} prefix={g.title === '今日' || g.title === '明日' ? undefined : fmt(e.date, 'M/d')} overdue={g.tone === 'danger'} />
+              <EventRow key={e.key} event={e} prefix={g.title === '今日' || g.title === '明日' ? undefined : fmt(e.date, 'M/d')} overdue={g.tone === 'danger'} />
             ))}
           </List>
         </div>
@@ -140,10 +141,10 @@ function AssayTab() {
           <SectionLabel>実施済み</SectionLabel>
           <List>
             {history.slice(0, historyCount).map((e) => (
-              <AgendaRow key={e.key} event={e} prefix={fmt(e.date, 'M/d')} />
+              <EventRow key={e.key} event={e} prefix={fmt(e.date, 'M/d')} />
             ))}
             {history.length > historyCount && (
-              <button className="min-h-12 w-full text-[14px] font-semibold text-brand-700" onClick={() => setHistoryCount((n) => n + 20)}>
+              <button className="min-h-12 w-full text-[14px] font-semibold text-teal-dark" onClick={() => setHistoryCount((n) => n + 20)}>
                 さらに表示
               </button>
             )}
@@ -168,7 +169,7 @@ function SeedingDetail({ id }: { id: string }) {
   const [showDoneTasks, setShowDoneTasks] = useState(false)
 
   const back = (
-    <button className="flex min-h-11 items-center px-2 text-[15px] font-semibold text-brand-700" onClick={() => navigate({ view: 'seedings' })}>
+    <button className="flex min-h-11 items-center px-2 text-[15px] font-semibold text-teal-dark" onClick={() => navigate({ view: 'seedings' })}>
       <ChevronLeft className="size-5" />
       播種
     </button>
@@ -187,7 +188,7 @@ function SeedingDetail({ id }: { id: string }) {
     <div>
       <PageTitle
         back={back}
-        sub={`${fmt(seeding.date, 'M/d (E)')} 播種 · ${cultureDay(seeding.date, today)}日目`}
+        sub={`${fmt(seeding.date, 'M/d (E)')} 播種 · ${cultureLabel(seeding.date, today)}`}
         title={seeding.plateType}
         right={<button className="btn-ghost btn-sm" onClick={() => open({ kind: 'seeding', id: seeding.id })}>編集</button>}
       />
@@ -196,9 +197,9 @@ function SeedingDetail({ id }: { id: string }) {
         className="group-card flex min-h-14 w-full items-center gap-3 px-4 text-left active:bg-black/[.03]"
         onClick={() => line && navigate({ view: 'lines', id: line.id })}
       >
-        <span className="size-3 shrink-0 rounded-full" style={{ backgroundColor: line?.color }} />
+        {line && <LineDot color={line.color} />}
         <span className="flex-1 truncate text-[15px] font-semibold">{line?.name ?? '(削除済み)'}</span>
-        {seeding.passageNumber !== null && <span className="font-mono text-[14px] text-sub">P{seeding.passageNumber}</span>}
+        {seeding.passageNumber !== null && <span className="font-num text-[14px] text-sub">P{seeding.passageNumber}</span>}
         <ChevronRight className="size-4 text-faint" />
       </button>
       {seeding.purpose && <p className="mt-3 px-1 text-[15px]">{seeding.purpose}</p>}
@@ -214,7 +215,7 @@ function SeedingDetail({ id }: { id: string }) {
 
       <SectionLabel
         right={
-          <button className="flex min-h-9 items-center gap-0.5 text-[13px] font-semibold text-brand-700" onClick={() => open({ kind: 'assay', seedingId: seeding.id })}>
+          <button className="flex min-h-9 items-center gap-0.5 text-[13px] font-semibold text-teal-dark" onClick={() => open({ kind: 'assay', seedingId: seeding.id })}>
             <Plus className="size-4" />
             追加
           </button>
@@ -223,7 +224,7 @@ function SeedingDetail({ id }: { id: string }) {
         アッセイ {assays.length > 0 && <span className="font-normal text-faint">{assays.filter((a) => a.done).length}/{assays.length}</span>}
       </SectionLabel>
       {assays.length === 0 ? (
-        <button className="group-card flex min-h-14 w-full items-center justify-center gap-1 text-[15px] font-semibold text-brand-700" onClick={() => open({ kind: 'assay', seedingId: seeding.id })}>
+        <button className="group-card flex min-h-14 w-full items-center justify-center gap-1 text-[15px] font-semibold text-teal-dark" onClick={() => open({ kind: 'assay', seedingId: seeding.id })}>
           <Plus className="size-4" />
           アッセイを予定する
         </button>
@@ -235,9 +236,9 @@ function SeedingDetail({ id }: { id: string }) {
               <div key={a.id} role="button" onClick={() => open({ kind: 'assay', id: a.id })} className="flex min-h-16 cursor-pointer items-center gap-3 px-4 py-2.5 active:bg-black/[.03]">
                 <div className={cx('min-w-0 flex-1', a.done && 'opacity-45')}>
                   <div className={cx('truncate text-[15px] font-semibold', a.done && 'line-through')}>{a.name}</div>
-                  <div className={cx('mt-0.5 text-[13px]', overdue ? 'font-semibold text-rose-600' : 'text-sub')}>
+                  <div className={cx('mt-0.5 text-[13px]', overdue ? 'font-semibold text-danger' : 'text-sub')}>
                     {fmt(a.date, 'M/d (E)')}
-                    {a.time && ` ${a.time}`} · {cultureDay(seeding.date, a.date)}日目 · {a.done ? '実施済み' : relativeLabel(a.date)}
+                    {a.time && ` ${a.time}`} · {cultureLabel(seeding.date, a.date)} · {a.done ? '実施済み' : relativeLabel(a.date)}
                   </div>
                   {a.result && <div className="mt-0.5 truncate text-[13px] text-emerald-700">結果: {a.result}</div>}
                 </div>
@@ -266,8 +267,8 @@ function SeedingDetail({ id }: { id: string }) {
             {visibleTasks.map((t) => (
               <div key={t.id} role="button" onClick={() => open({ kind: 'task', id: t.id })} className="flex min-h-14 cursor-pointer items-center gap-3 px-4 active:bg-black/[.03]">
                 <span className={cx('flex-1 text-[15px]', t.done && 'text-faint line-through')}>{t.title}</span>
-                <span className={cx('text-[13px]', !t.done && t.date < today ? 'font-semibold text-rose-600' : 'text-sub')}>
-                  {fmt(t.date, 'M/d')}・{cultureDay(seeding.date, t.date)}日目
+                <span className={cx('text-[13px]', !t.done && t.date < today ? 'font-semibold text-danger' : 'text-sub')}>
+                  {fmt(t.date, 'M/d')}・{cultureLabel(seeding.date, t.date)}
                 </span>
                 <Check checked={t.done} onChange={() => st.updateTask(t.id, { done: !t.done })} />
               </div>
@@ -287,7 +288,7 @@ function SeedingDetail({ id }: { id: string }) {
         </>
       )}
 
-      <button className="mt-6 flex min-h-11 w-full items-center justify-center gap-1.5 text-[15px] font-semibold text-brand-700" onClick={duplicate}>
+      <button className="mt-6 flex min-h-11 w-full items-center justify-center gap-1.5 text-[15px] font-semibold text-teal-dark" onClick={duplicate}>
         <Copy className="size-4" />
         同じ条件で今日また播種する
       </button>

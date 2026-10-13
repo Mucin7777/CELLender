@@ -1,49 +1,90 @@
 @import "tailwindcss";
 
+/*
+ * テーマ: 「細胞の成長と、実験の時間の循環」
+ * セージグリーンとミントを軸にした淡く清潔な配色。色の値はここに集約する
+ * （JS 側で必要な値は src/lib/constants.ts の THEME に同じ値を置いている）。
+ */
 @theme {
-  --font-sans: "Inter", "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic UI", "Meiryo", system-ui, sans-serif;
-  --color-brand-50: #f0fdfa;
-  --color-brand-100: #ccfbf1;
-  --color-brand-200: #99f6e4;
-  --color-brand-500: #14b8a6;
-  --color-brand-600: #0d9488;
-  --color-brand-700: #0f766e;
-  --color-brand-800: #115e59;
-  --color-canvas: #f4f5f7;
-  --color-ink: #111827;
-  --color-sub: #6b7280;
-  --color-faint: #9ca3af;
-  --color-hair: #e8eaee;
+  --font-sans: "Zen Kaku Gothic New", "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic UI", "Meiryo", system-ui, sans-serif;
+  --font-num: "DM Sans", "Zen Kaku Gothic New", "Hiragino Sans", system-ui, sans-serif;
+
+  /* 基本パレット */
+  --color-sage: #A8CDBD;      /* テーマカラー（ソフトセージ） */
+  --color-mint: #CEE7DD;      /* 選択部分・淡い塗り */
+  --color-teal: #397D70;      /* メインボタン・選択中の輪郭 */
+  --color-gray-sage: #7D928D; /* 未選択アイコン・UI 部品の枠 */
+  --color-canvas: #F7FAF8;    /* 画面背景（オフホワイト） */
+  --color-ink: #283E38;       /* 本文（ダークグリーングレー） */
+
+  /* 同系色の濃淡（コントラスト確保用） */
+  --color-mint-soft: #EEF6F2; /* hover・ごく淡い面 */
+  --color-teal-dark: #2C6458; /* ミントの上の文字・hover */
+  --color-sub: #4C605A;       /* 補助テキスト（背景に 6:1 以上） */
+  --color-faint: #627670;     /* 控えめなテキスト（背景に 4.5:1 以上） */
+  --color-hair: #E1EBE6;      /* 区切り線 */
+  --color-field: #F1F6F3;     /* 入力欄の地 */
+
+  /* 意味を持つ色（緑に寄せず残す） */
+  --color-danger: #B3412E;      /* エラー・遅れ（白に 5.6:1） */
+  --color-danger-soft: #F8EAE6;
+
+  /* 既存クラス名（brand-*）との互換 */
+  --color-brand-50: #EEF6F2;
+  --color-brand-100: #CEE7DD;
+  --color-brand-200: #A8CDBD;
+  --color-brand-500: #4F9282;
+  --color-brand-600: #397D70;
+  --color-brand-700: #2C6458;
+  --color-brand-800: #234F46;
 }
 
 html, body, #root { height: 100%; }
+:root {
+  --appbar-h: 52px;
+  --tabbar-h: calc(72px + env(safe-area-inset-bottom));
+}
 body {
   @apply bg-canvas text-ink antialiased;
   font-size: 15px;
   font-feature-settings: "palt";
   -webkit-tap-highlight-color: transparent;
 }
+::selection { background: var(--color-mint); }
+
+/* キーボード操作のフォーカスは、選択状態・hover と区別できる輪郭で示す */
+:where(a, button, input, select, textarea, summary, [role="button"], [tabindex]) {
+  outline-color: var(--color-teal); /* 色をあらかじめ決めておき、フォーカス時に色がアニメーションしないようにする */
+}
+:where(a, button, input, select, textarea, summary, [role="button"], [tabindex]):focus-visible {
+  outline: 2px solid var(--color-teal);
+  outline-offset: 2px;
+}
 
 @layer components {
   .input {
-    @apply block w-full rounded-xl bg-canvas px-3.5 py-3 text-[15px] text-ink outline-none transition
-      placeholder:text-faint focus:bg-white focus:ring-2 focus:ring-brand-500;
+    @apply block w-full rounded-xl border border-hair bg-field px-3.5 py-3 text-[15px] text-ink outline-none transition
+      placeholder:text-faint focus:border-teal focus:bg-white focus:ring-3 focus:ring-mint;
   }
+  .input:focus-visible { outline: none; }
   .label { @apply mb-1.5 block text-[13px] font-medium text-sub; }
-  .group-card { @apply overflow-hidden rounded-2xl bg-white; }
+  .group-card { @apply overflow-hidden rounded-2xl border border-hair bg-white; }
 
   .btn, .btn-primary, .btn-secondary, .btn-ghost, .btn-danger {
-    @apply inline-flex min-h-11 cursor-pointer items-center justify-center gap-1.5 rounded-xl px-4 text-[15px] font-semibold transition select-none active:scale-[.98] disabled:pointer-events-none disabled:opacity-40;
+    @apply inline-flex min-h-11 cursor-pointer items-center justify-center gap-1.5 rounded-xl px-4 text-[15px] font-bold transition select-none active:scale-[.98] disabled:pointer-events-none disabled:opacity-40;
   }
-  .btn-primary { @apply bg-brand-600 text-white hover:bg-brand-700; }
-  .btn-secondary { @apply bg-canvas text-ink hover:bg-hair; }
-  .btn-ghost { @apply text-brand-700 hover:bg-brand-50; }
-  .btn-danger { @apply bg-rose-600 text-white hover:bg-rose-700; }
+  .btn-primary { @apply bg-teal text-white hover:bg-teal-dark; }
+  .btn-secondary { @apply bg-mint-soft text-ink hover:bg-mint; }
+  .btn-ghost { @apply text-teal-dark hover:bg-mint-soft; }
+  .btn-danger { @apply bg-danger text-white hover:brightness-95; }
   .btn-sm { @apply min-h-9 rounded-lg px-3 text-[13px]; }
-  .icon-btn { @apply inline-flex size-11 cursor-pointer items-center justify-center rounded-full text-sub transition hover:bg-black/5 active:bg-black/10; }
+  .icon-btn { @apply inline-flex size-11 cursor-pointer items-center justify-center rounded-full text-sub transition hover:bg-mint-soft active:bg-mint; }
 }
 
 .no-scrollbar { scrollbar-width: none; }
+/* カレンダーを画面の高さいっぱいに広げる（ヘッダーとタブバーを除く） */
+.cal-fill { height: calc(100dvh - var(--appbar-h) - var(--tabbar-h)); min-height: 540px; }
+@media (min-width: 1024px) { .cal-fill { height: calc(100dvh - 56px); min-height: 620px; } }
 .no-scrollbar::-webkit-scrollbar { display: none; }
 
 @keyframes sheet-up { from { transform: translateY(100%); } to { transform: none; } }
