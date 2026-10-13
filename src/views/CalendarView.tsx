@@ -13,7 +13,7 @@ import { navigate } from '../lib/router'
 import { useSwipe } from '../lib/useSwipe'
 import type { CalendarEvent, CellLine, DateStr } from '../types'
 import { bandLook } from '../components/EventRow'
-import { BrandMark } from '../components/Brand'
+import { BrandLogo } from '../components/Brand'
 import { LineDot, List, cx } from '../components/ui'
 
 const WD_EN = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT']
@@ -234,9 +234,9 @@ function Legend({ lines }: { lines: CellLine[] }) {
 function Welcome({ onSample, onAdd, onLogin, canLogin }: { onSample: () => void; onAdd: () => void; onLogin: () => void; canLogin: boolean }) {
   return (
     <div className="mx-auto flex max-w-xl flex-col items-center pt-6 text-center">
-      <BrandMark size={128} />
-      <h1 className="mt-5 text-[26px] font-bold leading-tight">
-        <span className="font-num font-semibold">cellender</span> へようこそ
+      <h1 className="flex flex-col items-center pt-4 text-[22px] font-bold leading-tight">
+        <BrandLogo height={60} className="max-w-full" />
+        <span className="mt-4">へようこそ</span>
       </h1>
       <p className="mt-2 max-w-xs text-[14px] leading-relaxed text-sub">
         継代・播種・アッセイの予定を、

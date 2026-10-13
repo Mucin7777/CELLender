@@ -6,7 +6,7 @@ import { useStore } from './store/useStore'
 import { useUI } from './store/useUI'
 import { todayStr } from './lib/date'
 import { ModalHost, Toaster } from './components/ModalHost'
-import { BrandLockup } from './components/Brand'
+import { BrandLogo } from './components/Brand'
 import { CloudStatusButton, SyncConflictDialog } from './components/CloudSync'
 import { Splash, shouldShowSplash } from './components/Splash'
 import { NavIcon, type NavIconName } from './components/NavIcon'
@@ -85,7 +85,7 @@ export default function App() {
       {/* PC: 左レール */}
       <aside className="sticky top-0 hidden h-dvh w-60 shrink-0 flex-col gap-1 border-r border-hair bg-canvas px-3 py-5 lg:flex">
         <a href="#/" className="mb-5 flex items-center rounded-xl px-3 py-1" aria-label="cellender カレンダーへ">
-          <BrandLockup size={30} />
+          <BrandLogo height={34} alt="" />
         </a>
         <button className="btn-primary mb-4" onClick={() => open({ kind: 'add' })}>
           <Plus className="size-5" />
@@ -121,7 +121,7 @@ export default function App() {
         {isRoot && (
           <header className="sticky top-0 z-30 flex h-[var(--appbar-h)] items-center bg-canvas px-4 pt-[env(safe-area-inset-top)] lg:hidden">
             <a href="#/" aria-label="cellender カレンダーへ" className="-ml-1 rounded-xl px-1 py-1">
-              <BrandLockup size={26} />
+              <BrandLogo height={28} alt="" />
             </a>
             <div className="ml-auto">
               <CloudStatusButton variant="icon" />

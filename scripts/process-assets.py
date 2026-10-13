@@ -10,7 +10,8 @@
 
 出力:
   src/assets/icons/{calendar,cells,seeding,settings}-{default,active}.png  … ナビ用
-  src/assets/brand/cellender-symbol.png                                     … ヘッダー・空状態用
+  src/assets/brand/cellender-symbol.png                                     … 空状態用
+  src/assets/brand/cellender-logo.png                                       … 横長ロゴ（ヘッダー・起動画面・ようこそ）
   public/favicon-16.png, favicon-32.png, favicon.ico, apple-touch-icon.png   … アプリアイコン
   public/icon-192.png, icon-512.png, icon-maskable-512.png                   … ホーム画面（PWA）用
 
@@ -39,6 +40,7 @@ OPTICAL = {
 }
 ICON_PX = 144  # 48px 表示 × 3x まで鮮明
 SYMBOL_PX = 384
+LOGO_H = 192  # 横長ロゴの高さ（64px 表示 × 3x まで鮮明）
 
 
 def load(path: Path) -> np.ndarray:
@@ -111,6 +113,16 @@ def main() -> None:
     symbol = clean(load(SRC / "cellender-symbol.png"))
     fit(symbol, SYMBOL_PX, 0.92).save(BRAND_OUT / "cellender-symbol.png", optimize=True)
     print("brand  cellender-symbol.png")
+
+    # 横長ロゴは余白を切り詰めて高さを揃えるだけ（縦横比はそのまま）
+    logo = clean(load(SRC / "cellender-logo.png"))
+    x0, y0, x1, y1 = bbox(logo)
+    crop = to_image(logo[y0:y1, x0:x1])
+    w, h = crop.size
+    out = resize(crop, (round(w * LOGO_H / h), LOGO_H))
+    # 色数が少ないので 256 色に減色して軽くする（見た目はほぼ変わらず 1/6 程度のサイズになる）
+    out.quantize(256, method=Image.Quantize.FASTOCTREE, dither=Image.Dither.NONE).save(BRAND_OUT / "cellender-logo.png", optimize=True)
+    print("brand  cellender-logo.png", out.size)
 
     # favicon は透過のまま、わずかな余白をとる
     for px in (16, 32):

@@ -37,9 +37,10 @@
 
 | 場所 | 内容 |
 | --- | --- |
-| `cellender-design-kit/assets/` | 受け取った原本画像 9 点（変更しない） |
+| `cellender-design-kit/assets/` | 受け取った原本画像 10 点（変更しない。横長ロゴ `cellender-logo.png` を含む） |
 | `src/assets/icons/` | ナビ用アイコン（`{calendar,cells,seeding,settings}-{default,active}.png`、144px） |
-| `src/assets/brand/cellender-symbol.png` | ヘッダー・ウェルカム・空状態用シンボル（384px） |
+| `src/assets/brand/cellender-symbol.png` | 空状態用シンボル（384px） |
+| `src/assets/brand/cellender-logo.png` | 横長ロゴ（高さ 192px・256 色）。ヘッダー・起動画面・ようこそ・設定で、アプリ名の文字の代わりに使う |
 | `public/` | `favicon.ico`（16/32/48）、`favicon-16.png`、`favicon-32.png`、`apple-touch-icon.png`（180px・オフホワイト背景） |
 
 原本から処理版を作り直すときは `python3 scripts/process-assets.py`（Pillow・numpy が必要）。
