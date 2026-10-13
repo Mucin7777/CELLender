@@ -1,0 +1,45 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic UI", "Meiryo", system-ui, sans-serif;
+  --color-brand-50: #f0fdfa;
+  --color-brand-100: #ccfbf1;
+  --color-brand-200: #99f6e4;
+  --color-brand-500: #14b8a6;
+  --color-brand-600: #0d9488;
+  --color-brand-700: #0f766e;
+  --color-brand-800: #115e59;
+  --color-brand-900: #134e4a;
+}
+
+html, body, #root { height: 100%; }
+body {
+  @apply bg-slate-50 text-slate-800 antialiased;
+  font-feature-settings: "palt";
+}
+
+@layer components {
+  .input {
+    @apply w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-xs outline-none transition
+      placeholder:text-slate-400 focus:border-brand-500 focus:ring-3 focus:ring-brand-100;
+  }
+  .label { @apply mb-1 block text-xs font-medium text-slate-500; }
+  .card { @apply rounded-2xl border border-slate-200/80 bg-white shadow-xs; }
+
+  .btn, .btn-primary, .btn-secondary, .btn-ghost, .btn-danger {
+    @apply inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition select-none disabled:pointer-events-none disabled:opacity-50;
+  }
+  .btn-primary { @apply bg-brand-600 text-white shadow-sm hover:bg-brand-700 active:bg-brand-800; }
+  .btn-secondary { @apply border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 active:bg-slate-100; }
+  .btn-ghost { @apply text-slate-600 hover:bg-slate-100 active:bg-slate-200; }
+  .btn-danger { @apply bg-rose-600 text-white hover:bg-rose-700; }
+  .btn-sm { @apply px-2.5 py-1.5 text-xs; }
+  .icon-btn { @apply inline-flex size-8 cursor-pointer items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-slate-700; }
+}
+
+.scrollbar-thin { scrollbar-width: thin; }
+
+@keyframes pop-in { from { opacity: 0; transform: translateY(8px) scale(.98); } to { opacity: 1; transform: none; } }
+@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+.animate-pop-in { animation: pop-in .16s ease-out; }
+.animate-fade-in { animation: fade-in .12s ease-out; }
