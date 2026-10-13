@@ -1,140 +1,98 @@
 import { useMemo, useState } from 'react'
-import { Archive, ArchiveRestore, ArrowLeft, Beaker, FlaskConical, GitBranch, History, Pencil, Plus, Trash2 } from 'lucide-react'
+import { ChevronLeft, FlaskConical, GitBranch, Plus } from 'lucide-react'
 import { useStore } from '../store/useStore'
 import { useUI, confirmDialog } from '../store/useUI'
 import { cultureDay, diffDays, fmt, relativeLabel, todayStr } from '../lib/date'
 import { navigate } from '../lib/router'
 import type { CellLine } from '../types'
-import { EmptyState, PageHeader, Segmented, StatusBadge, cx } from '../components/ui'
-import { Section } from './TodayView'
+import { EmptyState, List, PageTitle, Row, SectionLabel, StatusBadge, cx } from '../components/ui'
 
 export function LinesView({ id }: { id?: string }) {
   return id ? <LineDetail id={id} /> : <LineList />
 }
 
-function dueState(line: CellLine, today: string) {
-  if (!line.nextPassageDate) return { label: '予定なし', cls: 'text-slate-400 bg-slate-100' }
-  const d = diffDays(today, line.nextPassageDate)
-  if (d < 0) return { label: `${-d}日超過`, cls: 'text-rose-700 bg-rose-100' }
-  if (d === 0) return { label: '今日継代', cls: 'text-amber-800 bg-amber-100' }
-  if (d === 1) return { label: '明日', cls: 'text-teal-800 bg-teal-100' }
-  return { label: `${d}日後`, cls: 'text-slate-600 bg-slate-100' }
+/** 次回継代までの状態を小さなラベルで表す */
+export function DuePill({ line }: { line: CellLine }) {
+  if (!line.nextPassageDate) return <span className="text-[13px] text-faint">予定なし</span>
+  const d = diffDays(todayStr(), line.nextPassageDate)
+  const [label, cls] =
+    d < 0 ? [`${-d}日超過`, 'bg-rose-50 text-rose-600'] : d === 0 ? ['今日', 'bg-amber-50 text-amber-700'] : d === 1 ? ['明日', 'bg-canvas text-ink'] : [`${d}日後`, 'text-sub']
+  return <span className={cx('shrink-0 rounded-full px-2 py-0.5 text-[13px] font-semibold', cls)}>{label}</span>
+}
+
+/** ライン色の角丸に P 数を入れたアイコン */
+export function PBadge({ line, size = 'md' }: { line: CellLine; size?: 'md' | 'lg' }) {
+  return (
+    <span
+      className={cx('flex shrink-0 items-center justify-center rounded-xl font-mono font-bold', size === 'lg' ? 'h-14 min-w-14 px-2 text-[20px]' : 'h-10 min-w-10 px-1 text-[13px]')}
+      style={{ backgroundColor: `${line.color}1a`, color: line.color }}
+    >
+      P{line.passageNumber}
+    </span>
+  )
 }
 
 function LineList() {
   const lines = useStore((s) => s.lines)
-  const seedings = useStore((s) => s.seedings)
   const open = useUI((s) => s.open)
-  const today = todayStr()
-  const [tab, setTab] = useState<'active' | 'archived'>('active')
-  const shown = useMemo(
-    () =>
-      lines
-        .filter((l) => (tab === 'active' ? !l.archived : l.archived))
-        .sort((a, b) => (a.nextPassageDate ?? '9999') .localeCompare(b.nextPassageDate ?? '9999') || a.name.localeCompare(b.name, 'ja')),
-    [lines, tab],
+  const [showArchived, setShowArchived] = useState(false)
+  const sorted = useMemo(
+    () => [...lines].sort((a, b) => (a.nextPassageDate ?? '9999').localeCompare(b.nextPassageDate ?? '9999') || a.name.localeCompare(b.name, 'ja')),
+    [lines],
   )
-  const archivedCount = lines.filter((l) => l.archived).length
+  const active = sorted.filter((l) => !l.archived)
+  const archived = sorted.filter((l) => l.archived)
 
   return (
-    <div className="mx-auto max-w-6xl">
-      <PageHeader
+    <div>
+      <PageTitle
         title="細胞ライン"
-        subtitle="継代中の細胞ライン・ロットを管理します（次回継代が近い順）"
-        actions={
-          <button className="btn-primary" onClick={() => open({ kind: 'line' })}>
-            <Plus className="size-4" />
-            ラインを追加
+        right={
+          <button className="icon-btn bg-white text-brand-700" onClick={() => open({ kind: 'line' })} aria-label="ラインを追加">
+            <Plus className="size-5" />
           </button>
         }
       />
-      {archivedCount > 0 && (
-        <div className="mb-4">
-          <Segmented value={tab} onChange={setTab} options={[{ value: 'active', label: '使用中' }, { value: 'archived', label: `アーカイブ (${archivedCount})` }]} />
-        </div>
-      )}
-      {shown.length === 0 ? (
-        <div className="card">
+      {active.length === 0 ? (
+        <div className="group-card">
           <EmptyState
-            icon={<GitBranch className="size-5" />}
-            title={tab === 'active' ? '細胞ラインがありません' : 'アーカイブはありません'}
-            description="「ヒト回腸 Lot1」「Caco-2」など、維持している細胞を登録しましょう。"
-            action={tab === 'active' && <button className="btn-primary" onClick={() => open({ kind: 'line' })}><Plus className="size-4" />ラインを追加</button>}
+            icon={<GitBranch className="size-8" />}
+            title="細胞ラインがありません"
+            description="維持している細胞を登録すると、継代の予定が自動で入ります。"
+            action={<button className="btn-primary" onClick={() => open({ kind: 'line' })}>ラインを追加</button>}
           />
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          {shown.map((l) => {
-            const ds = dueState(l, today)
-            const active = seedings.filter((s) => s.lineId === l.id && (s.status === 'culturing' || s.status === 'assay_scheduled')).length
-            const elapsed = l.lastPassageDate ? diffDays(l.lastPassageDate, today) : null
-            const progress = elapsed !== null && l.passageIntervalDays > 0 ? Math.min(1, Math.max(0, elapsed / l.passageIntervalDays)) : null
-            return (
-              <div key={l.id} onClick={() => navigate({ view: 'lines', id: l.id })} className="card group cursor-pointer overflow-hidden transition hover:-translate-y-0.5 hover:shadow-md">
-                <div className="h-1.5" style={{ backgroundColor: l.color }} />
-                <div className="p-4">
-                  <div className="flex items-start gap-3">
-                    <div className="min-w-0 flex-1">
-                      <div className="truncate text-base font-bold text-slate-900">{l.name}</div>
-                      <div className="truncate text-xs text-slate-500">{[l.origin, l.lot].filter(Boolean).join(' · ') || '—'}</div>
-                    </div>
-                    <div className="rounded-lg px-2 py-1 font-mono text-lg font-bold leading-none" style={{ color: l.color, backgroundColor: `${l.color}14` }}>
-                      P{l.passageNumber}
-                    </div>
-                  </div>
-                  <div className="mt-4 grid grid-cols-2 gap-2 text-xs">
-                    <div>
-                      <div className="text-slate-400">前回継代</div>
-                      <div className="font-medium text-slate-700">{l.lastPassageDate ? `${fmt(l.lastPassageDate, 'M/d (E)')}` : '—'}</div>
-                    </div>
-                    <div>
-                      <div className="text-slate-400">次回予定</div>
-                      <div className="flex items-center gap-1.5 font-medium text-slate-700">
-                        {l.nextPassageDate ? fmt(l.nextPassageDate, 'M/d (E)') : '—'}
-                        <span className={cx('rounded px-1.5 py-px text-[10px] font-semibold', ds.cls)}>{ds.label}</span>
-                      </div>
-                    </div>
-                  </div>
-                  {progress !== null && (
-                    <div className="mt-3">
-                      <div className="h-1.5 overflow-hidden rounded-full bg-slate-100">
-                        <div className="h-full rounded-full transition-all" style={{ width: `${progress * 100}%`, backgroundColor: progress >= 1 ? '#e11d48' : l.color }} />
-                      </div>
-                      <div className="mt-1 text-[10px] text-slate-400">
-                        継代後 {elapsed} 日 / 間隔 {l.passageIntervalDays} 日
-                      </div>
-                    </div>
-                  )}
-                  <div className="mt-4 flex items-center gap-2">
-                    <button
-                      className="btn-primary btn-sm"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        open({ kind: 'passage', lineId: l.id })
-                      }}
-                      disabled={l.archived}
-                    >
-                      <GitBranch className="size-3.5" />
-                      継代する
-                    </button>
-                    <button
-                      className="btn-secondary btn-sm"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        open({ kind: 'seeding', lineId: l.id })
-                      }}
-                      disabled={l.archived}
-                    >
-                      <FlaskConical className="size-3.5" />
-                      播種
-                    </button>
-                    {active > 0 && <span className="ml-auto text-xs text-slate-500">培養中 {active}</span>}
-                  </div>
-                </div>
-              </div>
-            )
-          })}
-        </div>
+        <>
+          <p className="mb-2 px-1 text-[13px] text-sub">次の継代が近い順</p>
+          <List>
+            {active.map((l) => (
+              <Row
+                key={l.id}
+                onClick={() => navigate({ view: 'lines', id: l.id })}
+                left={<PBadge line={l} />}
+                title={l.name}
+                sub={l.nextPassageDate ? `次回 ${fmt(l.nextPassageDate, 'M/d (E)')}` : '次回予定なし'}
+                right={<DuePill line={l} />}
+                chevron
+              />
+            ))}
+          </List>
+        </>
+      )}
+      {archived.length > 0 && (
+        <>
+          <button className="mt-6 min-h-11 px-1 text-[14px] font-semibold text-sub" onClick={() => setShowArchived((v) => !v)}>
+            アーカイブ（{archived.length}）{showArchived ? 'を隠す' : 'を表示'}
+          </button>
+          {showArchived && (
+            <List>
+              {archived.map((l) => (
+                <Row key={l.id} dim onClick={() => navigate({ view: 'lines', id: l.id })} left={<PBadge line={l} />} title={l.name} chevron />
+              ))}
+            </List>
+          )}
+        </>
       )}
     </div>
   )
@@ -143,186 +101,164 @@ function LineList() {
 function LineDetail({ id }: { id: string }) {
   const st = useStore()
   const { open, toast } = useUI()
-  const line = st.lines.find((l) => l.id === id)
   const today = todayStr()
-  const passages = useMemo(() => st.passages.filter((p) => p.lineId === id).sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : b.passageNumber - a.passageNumber)), [st.passages, id])
+  const line = st.lines.find((l) => l.id === id)
+  const passages = useMemo(
+    () => st.passages.filter((p) => p.lineId === id).sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : b.passageNumber - a.passageNumber)),
+    [st.passages, id],
+  )
   const seedings = useMemo(() => st.seedings.filter((s) => s.lineId === id).sort((a, b) => (a.date < b.date ? 1 : -1)), [st.seedings, id])
+  const [allHistory, setAllHistory] = useState(false)
 
-  if (!line) {
-    return (
-      <div className="card mx-auto max-w-xl">
-        <EmptyState icon={<GitBranch className="size-5" />} title="細胞ラインが見つかりません" action={<button className="btn-secondary" onClick={() => navigate({ view: 'lines' })}>一覧へ戻る</button>} />
-      </div>
-    )
-  }
-  const ds = dueState(line, today)
+  const back = (
+    <button className="flex min-h-11 items-center px-2 text-[15px] font-semibold text-brand-700" onClick={() => navigate({ view: 'lines' })}>
+      <ChevronLeft className="size-5" />
+      細胞ライン
+    </button>
+  )
+
+  if (!line) return <EmptyState title="細胞ラインが見つかりません" action={back} />
 
   return (
-    <div className="mx-auto max-w-5xl">
-      <button className="btn-ghost btn-sm -ml-2 mb-3" onClick={() => navigate({ view: 'lines' })}>
-        <ArrowLeft className="size-4" />
-        細胞ライン一覧
-      </button>
+    <div>
+      <PageTitle
+        back={back}
+        title={line.name}
+        sub={[line.origin, line.lot].filter(Boolean).join(' · ') || undefined}
+        right={<button className="btn-ghost btn-sm" onClick={() => open({ kind: 'line', id: line.id })}>編集</button>}
+      />
 
-      <div className="card mb-5 overflow-hidden">
-        <div className="h-2" style={{ backgroundColor: line.color }} />
-        <div className="flex flex-wrap items-start gap-4 p-5">
+      {/* 主要情報と主アクション */}
+      <div className="group-card p-4">
+        <div className="flex items-center gap-4">
+          <PBadge line={line} size="lg" />
           <div className="min-w-0 flex-1">
+            <div className="text-[13px] text-sub">次回の継代</div>
             <div className="flex items-center gap-2">
-              <h1 className="truncate text-2xl font-bold tracking-tight text-slate-900">{line.name}</h1>
-              {line.archived && <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-500">アーカイブ</span>}
+              <span className="text-[20px] font-bold">{line.nextPassageDate ? fmt(line.nextPassageDate, 'M/d (E)') : '—'}</span>
+              <DuePill line={line} />
             </div>
-            <div className="mt-1 text-sm text-slate-500">{[line.origin, line.lot].filter(Boolean).join(' · ') || '—'}</div>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <button className="btn-secondary" onClick={() => open({ kind: 'line', id: line.id })}>
-              <Pencil className="size-4" />
-              編集
-            </button>
-            <button
-              className="btn-secondary"
-              onClick={() => {
-                st.updateLine(line.id, { archived: !line.archived })
-                toast(line.archived ? 'アーカイブを解除しました' : 'アーカイブしました（カレンダーの継代予定は非表示になります）')
-              }}
-            >
-              {line.archived ? <ArchiveRestore className="size-4" /> : <Archive className="size-4" />}
-              {line.archived ? '復元' : 'アーカイブ'}
-            </button>
-            {!line.archived && (
-              <>
-                <button className="btn-secondary" onClick={() => open({ kind: 'seeding', lineId: line.id })}>
-                  <FlaskConical className="size-4" />
-                  播種を記録
-                </button>
-                <button className="btn-primary" onClick={() => open({ kind: 'passage', lineId: line.id })}>
-                  <GitBranch className="size-4" />
-                  継代を記録
-                </button>
-              </>
-            )}
           </div>
         </div>
-        <div className="grid grid-cols-2 gap-px border-t border-slate-100 bg-slate-100 sm:grid-cols-4">
-          <Info label="現在の継代数" value={<span className="font-mono text-xl" style={{ color: line.color }}>P{line.passageNumber}</span>} />
-          <Info label="前回継代" value={line.lastPassageDate ? `${fmt(line.lastPassageDate, 'M/d (E)')}` : '—'} sub={line.lastPassageDate ? relativeLabel(line.lastPassageDate) : undefined} />
-          <Info
-            label="次回継代予定"
-            value={
-              <input
-                type="date"
-                className="-ml-1 rounded-md border border-transparent bg-transparent px-1 font-semibold text-slate-800 hover:border-slate-200 focus:border-brand-500 focus:outline-none"
-                value={line.nextPassageDate ?? ''}
-                onChange={(e) => st.updateLine(line.id, { nextPassageDate: e.target.value || null })}
-              />
-            }
-            sub={<span className={cx('rounded px-1.5 py-px text-[10px] font-semibold', ds.cls)}>{ds.label}</span>}
-          />
-          <Info label="継代間隔" value={line.passageIntervalDays ? `${line.passageIntervalDays} 日` : '—'} />
-        </div>
-        {(line.medium || line.vessel || line.notes) && (
-          <div className="grid grid-cols-1 gap-3 border-t border-slate-100 p-5 text-sm sm:grid-cols-3">
-            {line.medium && <KV k="培地" v={line.medium} />}
-            {line.vessel && <KV k="培養容器" v={line.vessel} />}
-            {line.notes && <KV k="メモ" v={line.notes} className="sm:col-span-3" />}
+        {line.archived ? (
+          <button className="btn-secondary mt-4 w-full" onClick={() => st.updateLine(line.id, { archived: false })}>
+            アーカイブから戻す
+          </button>
+        ) : (
+          <div className="mt-4 grid grid-cols-2 gap-2">
+            <button className="btn-primary" onClick={() => open({ kind: 'passage', lineId: line.id })}>
+              <GitBranch className="size-4.5" />
+              継代する
+            </button>
+            <button className="btn-secondary" onClick={() => open({ kind: 'seeding', lineId: line.id })}>
+              <FlaskConical className="size-4.5" />
+              播種する
+            </button>
           </div>
         )}
       </div>
 
-      <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
-        <Section title={`播種記録 (${seedings.length})`} icon={<FlaskConical className="size-4 text-blue-600" />} right={!line.archived && <button className="btn-ghost btn-sm text-brand-700" onClick={() => open({ kind: 'seeding', lineId: line.id })}><Plus className="size-3.5" />播種</button>}>
-          {seedings.length === 0 ? (
-            <p className="px-3 py-6 text-center text-sm text-slate-400">まだ播種記録はありません</p>
-          ) : (
-            seedings.map((s) => {
-              const sa = st.assays.filter((a) => a.seedingId === s.id)
-              const active = s.status === 'culturing' || s.status === 'assay_scheduled'
-              return (
-                <button key={s.id} onClick={() => navigate({ view: 'seedings', id: s.id })} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition hover:bg-slate-50">
-                  <div className="w-14 shrink-0 text-center">
-                    <div className="text-sm font-bold text-slate-800">{fmt(s.date, 'M/d')}</div>
-                    <div className="text-[10px] text-slate-400">{active ? `Day ${cultureDay(s.date, today)}` : fmt(s.date, 'yyyy')}</div>
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="truncate text-sm font-medium text-slate-800">{s.plateType}</div>
-                    <div className="truncate text-xs text-slate-500">
-                      {s.purpose || '—'}
-                      {s.passageNumber !== null && ` · P${s.passageNumber}`}
-                    </div>
-                  </div>
-                  {sa.length > 0 && (
-                    <span className="flex items-center gap-1 text-xs text-slate-400">
-                      <Beaker className="size-3" />
-                      {sa.filter((a) => a.done).length}/{sa.length}
-                    </span>
-                  )}
-                  <StatusBadge status={s.status} />
-                </button>
-              )
-            })
-          )}
-        </Section>
+      <List className="mt-3">
+        <Row title="前回の継代" right={<span className="text-[15px] text-sub">{line.lastPassageDate ? `${fmt(line.lastPassageDate, 'M/d (E)')}・${relativeLabel(line.lastPassageDate)}` : '—'}</span>} />
+        <label className="flex min-h-14 items-center gap-3 px-4">
+          <span className="flex-1 text-[15px] font-semibold">次回の予定日</span>
+          <input
+            type="date"
+            className="rounded-lg bg-canvas px-2 py-1.5 text-[15px] outline-none focus:ring-2 focus:ring-brand-500"
+            value={line.nextPassageDate ?? ''}
+            onChange={(e) => st.updateLine(line.id, { nextPassageDate: e.target.value || null })}
+          />
+        </label>
+        <Row title="継代間隔" right={<span className="text-[15px] text-sub">{line.passageIntervalDays ? `${line.passageIntervalDays} 日` : '—'}</span>} />
+        {line.medium && <Row title="培地" right={<span className="truncate text-[15px] text-sub">{line.medium}</span>} />}
+        {line.vessel && <Row title="培養容器" right={<span className="truncate text-[15px] text-sub">{line.vessel}</span>} />}
+      </List>
+      {line.notes && <p className="mt-3 whitespace-pre-wrap rounded-2xl bg-white px-4 py-3 text-[14px]">{line.notes}</p>}
 
-        <Section title={`継代履歴 (${passages.length})`} icon={<History className="size-4 text-slate-500" />}>
-          {passages.length === 0 ? (
-            <p className="px-3 py-6 text-center text-sm text-slate-400">「継代を記録」で履歴が残ります</p>
-          ) : (
-            <div className="relative px-3 pb-2">
-              <div className="absolute bottom-4 left-[29px] top-3 w-px bg-slate-200" />
-              {passages.map((p, i) => (
-                <div key={p.id} className="group relative flex items-start gap-3 py-2">
-                  <div className={cx('relative z-10 flex h-6 w-9 shrink-0 items-center justify-center rounded-full font-mono text-[11px] font-bold', i === 0 ? 'text-white' : 'bg-white text-slate-500 ring-1 ring-slate-200')} style={i === 0 ? { backgroundColor: line.color } : undefined}>
-                    P{p.passageNumber}
-                  </div>
-                  <div className="min-w-0 flex-1 pt-0.5">
-                    <div className="flex items-center gap-2 text-sm">
-                      <span className="font-medium text-slate-800">{fmt(p.date, 'yyyy/M/d (E)')}</span>
-                      {p.splitRatio && <span className="rounded bg-slate-100 px-1.5 text-xs text-slate-600">{p.splitRatio}</span>}
-                    </div>
-                    {p.notes && <div className="mt-0.5 text-xs text-slate-500">{p.notes}</div>}
-                  </div>
+      <SectionLabel
+        right={!line.archived && (
+          <button className="flex min-h-9 items-center gap-0.5 text-[13px] font-semibold text-brand-700" onClick={() => open({ kind: 'seeding', lineId: line.id })}>
+            <Plus className="size-4" />
+            播種
+          </button>
+        )}
+      >
+        播種記録
+      </SectionLabel>
+      {seedings.length === 0 ? (
+        <div className="group-card py-6 text-center text-[14px] text-sub">まだありません</div>
+      ) : (
+        <List>
+          {seedings.map((s) => {
+            const active = s.status === 'culturing' || s.status === 'assay_scheduled'
+            return (
+              <Row
+                key={s.id}
+                onClick={() => navigate({ view: 'seedings', id: s.id })}
+                title={`${fmt(s.date, 'M/d')} · ${s.plateType}`}
+                sub={[active && `${cultureDay(s.date, today)}日目`, s.purpose].filter(Boolean).join(' · ') || undefined}
+                right={<StatusBadge status={s.status} />}
+                chevron
+              />
+            )
+          })}
+        </List>
+      )}
+
+      <SectionLabel>継代履歴</SectionLabel>
+      {passages.length === 0 ? (
+        <div className="group-card py-6 text-center text-[14px] text-sub">「継代する」を押すと記録されます</div>
+      ) : (
+        <List>
+          {(allHistory ? passages : passages.slice(0, 5)).map((p, i) => (
+            <Row
+              key={p.id}
+              left={<span className={cx('w-12 font-mono text-[14px] font-bold', i === 0 ? '' : 'text-sub')} style={i === 0 ? { color: line.color } : undefined}>P{p.passageNumber}</span>}
+              title={fmt(p.date, 'yyyy/M/d (E)')}
+              sub={[p.splitRatio, p.notes].filter(Boolean).join(' · ') || undefined}
+              right={
+                i === 0 && (
                   <button
-                    className="icon-btn size-7 opacity-0 transition group-hover:opacity-100"
-                    aria-label="取り消し"
-                    title="この継代記録を削除"
+                    className="btn-sm btn text-sub"
                     onClick={() =>
                       confirmDialog({
-                        title: '継代記録を削除',
-                        message: i === 0 ? '最新の継代記録を削除すると、ラインの継代数・予定日も元に戻ります。' : 'この継代記録を削除します。',
-                        confirmLabel: '削除',
+                        title: 'この継代を取り消しますか？',
+                        message: 'P数と予定日も元に戻ります。',
+                        confirmLabel: '取り消す',
                         danger: true,
-                        onConfirm: () => st.deletePassage(p.id),
+                        onConfirm: () => {
+                          st.deletePassage(p.id)
+                          toast('継代記録を取り消しました')
+                        },
                       })
                     }
                   >
-                    <Trash2 className="size-3.5" />
+                    取り消し
                   </button>
-                </div>
-              ))}
-            </div>
+                )
+              }
+            />
+          ))}
+          {passages.length > 5 && !allHistory && (
+            <button className="min-h-12 w-full text-[14px] font-semibold text-brand-700" onClick={() => setAllHistory(true)}>
+              すべて表示（{passages.length}件）
+            </button>
           )}
-        </Section>
-      </div>
+        </List>
+      )}
+
+      {!line.archived && (
+        <button
+          className="mt-6 min-h-11 w-full text-[15px] font-semibold text-sub"
+          onClick={() => {
+            st.updateLine(line.id, { archived: true })
+            toast('アーカイブしました')
+            navigate({ view: 'lines' })
+          }}
+        >
+          このラインをアーカイブ
+        </button>
+      )}
     </div>
   )
 }
-
-function Info({ label, value, sub }: { label: string; value: React.ReactNode; sub?: React.ReactNode }) {
-  return (
-    <div className="bg-white px-5 py-3">
-      <div className="text-xs text-slate-400">{label}</div>
-      <div className="mt-0.5 font-semibold text-slate-800">{value}</div>
-      {sub && <div className="mt-0.5 text-xs text-slate-500">{sub}</div>}
-    </div>
-  )
-}
-
-function KV({ k, v, className }: { k: string; v: string; className?: string }) {
-  return (
-    <div className={className}>
-      <div className="text-xs text-slate-400">{k}</div>
-      <div className="whitespace-pre-wrap text-slate-700">{v}</div>
-    </div>
-  )
-}
-

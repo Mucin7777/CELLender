@@ -1,10 +1,11 @@
 import { useRef } from 'react'
-import { Download, Database, Sparkles, Trash2, Upload } from 'lucide-react'
+import { Download, FileSpreadsheet, Sparkles, Trash2, Upload } from 'lucide-react'
 import { useStore, selectData } from '../store/useStore'
 import { useUI, confirmDialog } from '../store/useUI'
 import { todayStr } from '../lib/date'
 import type { AppData } from '../types'
-import { PageHeader } from '../components/ui'
+import { usePrefs } from '../store/usePrefs'
+import { List, PageTitle, Row, SectionLabel, Segmented } from '../components/ui'
 
 function download(filename: string, content: string, type: string) {
   const blob = new Blob([content], { type })
@@ -52,8 +53,8 @@ export function SettingsView() {
       const parsed = JSON.parse(await file.text()) as Partial<AppData>
       if (!Array.isArray(parsed.lines) || !Array.isArray(parsed.seedings)) throw new Error('invalid')
       confirmDialog({
-        title: 'バックアップを読み込む',
-        message: `細胞ライン ${parsed.lines.length} 件、播種記録 ${parsed.seedings.length} 件を読み込みます。\n現在のデータはすべて置き換えられます。`,
+        title: 'バックアップから復元しますか？',
+        message: `細胞ライン ${parsed.lines.length} 件、播種 ${parsed.seedings.length} 件。\n今のデータは置き換わります。`,
         confirmLabel: '読み込む',
         onConfirm: () => {
           st.replaceAll({
@@ -72,104 +73,90 @@ export function SettingsView() {
     }
   }
 
-  return (
-    <div className="mx-auto max-w-3xl">
-      <PageHeader title="設定・データ" subtitle="データはこのブラウザ内（localStorage）に自動保存されます" />
+  const { weekStartsOn, set: setPrefs } = usePrefs()
 
-      <div className="card mb-5 grid grid-cols-2 gap-px overflow-hidden bg-slate-100 sm:grid-cols-5">
+  return (
+    <div>
+      <PageTitle title="設定" />
+
+      <div className="group-card grid grid-cols-4 divide-x divide-hair py-3 text-center">
         {[
-          ['細胞ライン', data.lines.length],
-          ['継代記録', data.passages.length],
-          ['播種記録', data.seedings.length],
+          ['ライン', data.lines.length],
+          ['継代', data.passages.length],
+          ['播種', data.seedings.length],
           ['アッセイ', data.assays.length],
-          ['その他予定', data.tasks.length],
         ].map(([k, v]) => (
-          <div key={k} className="bg-white px-4 py-3">
-            <div className="text-xs text-slate-400">{k}</div>
-            <div className="text-xl font-bold text-slate-800">{v}</div>
+          <div key={k}>
+            <div className="text-[20px] font-bold">{v}</div>
+            <div className="text-[12px] text-sub">{k}</div>
           </div>
         ))}
       </div>
 
-      <div className="space-y-4">
-        <Card icon={<Database className="size-5" />} title="バックアップ" desc="ブラウザのデータ消去や PC の変更に備えて、定期的にバックアップを保存してください。JSON は別の PC・ブラウザで読み込めます。">
-          <button className="btn-primary" onClick={exportJson}>
-            <Download className="size-4" />
-            バックアップ (JSON)
-          </button>
-          <button className="btn-secondary" onClick={() => fileRef.current?.click()}>
-            <Upload className="size-4" />
-            バックアップを読み込む
-          </button>
-          <button className="btn-secondary" onClick={exportCsv}>
-            <Download className="size-4" />
-            記録を CSV 出力
-          </button>
-          <input
-            ref={fileRef}
-            type="file"
-            accept="application/json,.json"
-            className="hidden"
-            onChange={(e) => {
-              const f = e.target.files?.[0]
-              if (f) onImport(f)
-              e.target.value = ''
-            }}
-          />
-        </Card>
+      <SectionLabel>表示</SectionLabel>
+      <List>
+        <div className="flex min-h-14 items-center gap-3 px-4">
+          <span className="flex-1 text-[15px] font-semibold">週の始まり</span>
+          <Segmented value={String(weekStartsOn) as '0' | '1'} onChange={(v) => setPrefs({ weekStartsOn: v === '1' ? 1 : 0 })} options={[{ value: '0', label: '日曜' }, { value: '1', label: '月曜' }]} />
+        </div>
+      </List>
 
-        <Card icon={<Sparkles className="size-5" />} title="サンプルデータ" desc="今日を基準にしたデモデータ（ヒト回腸 Lot1/Lot2、マウス Lot3、Caco-2）を読み込みます。現在のデータは置き換えられます。">
-          <button
-            className="btn-secondary"
-            onClick={() =>
-              confirmDialog({
-                title: 'サンプルデータを読み込む',
-                message: '現在のデータはすべてサンプルデータに置き換えられます。',
-                confirmLabel: '読み込む',
-                onConfirm: () => {
-                  st.loadSample()
-                  toast('サンプルデータを読み込みました')
-                },
-              })
-            }
-          >
-            サンプルデータを読み込む
-          </button>
-        </Card>
+      <SectionLabel>バックアップ</SectionLabel>
+      <List>
+        <Row onClick={exportJson} left={<Download className="size-5 text-brand-700" />} title="バックアップを保存" sub="JSON ファイルとしてダウンロード" />
+        <Row onClick={() => fileRef.current?.click()} left={<Upload className="size-5 text-brand-700" />} title="バックアップから復元" sub="別の端末のデータを読み込む" />
+        <Row onClick={exportCsv} left={<FileSpreadsheet className="size-5 text-brand-700" />} title="記録を CSV で出力" sub="Excel で開けます" />
+      </List>
+      <p className="mt-2 px-1 text-[12px] leading-relaxed text-sub">
+        データはこの端末のブラウザ内だけに保存されます。PC とスマホでは別々のデータになるため、移すときはバックアップを保存して、もう一方で復元してください。
+      </p>
+      <input
+        ref={fileRef}
+        type="file"
+        accept="application/json,.json"
+        className="hidden"
+        onChange={(e) => {
+          const f = e.target.files?.[0]
+          if (f) onImport(f)
+          e.target.value = ''
+        }}
+      />
 
-        <Card icon={<Trash2 className="size-5 text-rose-600" />} title="すべてのデータを削除" desc="このブラウザに保存されたすべての記録を削除します。必要に応じて先にバックアップしてください。">
-          <button
-            className="btn-secondary text-rose-600 hover:bg-rose-50"
-            onClick={() =>
-              confirmDialog({
-                title: 'すべてのデータを削除',
-                message: 'すべての細胞ライン・継代・播種・アッセイの記録を削除します。この操作は取り消せません。',
-                confirmLabel: '削除する',
-                danger: true,
-                onConfirm: () => {
-                  st.clearAll()
-                  toast('すべてのデータを削除しました')
-                },
-              })
-            }
-          >
-            すべて削除
-          </button>
-        </Card>
-      </div>
+      <SectionLabel>その他</SectionLabel>
+      <List>
+        <Row
+          onClick={() =>
+            confirmDialog({
+              title: 'サンプルデータを読み込みますか？',
+              message: '今のデータはサンプルに置き換わります。',
+              confirmLabel: '読み込む',
+              onConfirm: () => {
+                st.loadSample()
+                toast('サンプルデータを読み込みました')
+              },
+            })
+          }
+          left={<Sparkles className="size-5 text-sub" />}
+          title="サンプルデータを読み込む"
+        />
+        <Row
+          onClick={() =>
+            confirmDialog({
+              title: 'すべてのデータを削除しますか？',
+              message: 'この操作は取り消せません。',
+              confirmLabel: '削除',
+              danger: true,
+              onConfirm: () => {
+                st.clearAll()
+                toast('すべてのデータを削除しました')
+              },
+            })
+          }
+          left={<Trash2 className="size-5 text-rose-600" />}
+          title={<span className="text-rose-600">すべてのデータを削除</span>}
+        />
+      </List>
+      <p className="mt-6 text-center text-[12px] text-faint">Cellendar</p>
     </div>
-  )
-}
-
-function Card({ icon, title, desc, children }: { icon: React.ReactNode; title: string; desc: string; children: React.ReactNode }) {
-  return (
-    <section className="card flex flex-col gap-4 p-5 sm:flex-row">
-      <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600">{icon}</div>
-      <div className="min-w-0 flex-1">
-        <h2 className="font-bold text-slate-900">{title}</h2>
-        <p className="mt-1 text-sm text-slate-500">{desc}</p>
-        <div className="mt-3 flex flex-wrap gap-2">{children}</div>
-      </div>
-    </section>
   )
 }

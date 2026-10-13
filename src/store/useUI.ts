@@ -7,7 +7,7 @@ export type ModalState =
   | { kind: 'seeding'; id?: string; lineId?: string; date?: DateStr }
   | { kind: 'assay'; id?: string; seedingId?: string; date?: DateStr }
   | { kind: 'task'; id?: string; date?: DateStr; taskKind?: TaskKind; lineId?: string; seedingId?: string }
-  | { kind: 'quickAdd'; date: DateStr }
+  | { kind: 'add'; date?: DateStr }
   | { kind: 'event'; event: CalendarEvent }
   | { kind: 'confirm'; title: string; message: string; confirmLabel?: string; danger?: boolean; onConfirm: () => void }
 
