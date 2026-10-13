@@ -9,6 +9,7 @@ export type ModalState =
   | { kind: 'task'; id?: string; date?: DateStr; taskKind?: TaskKind; lineId?: string; seedingId?: string }
   | { kind: 'add'; date?: DateStr }
   | { kind: 'event'; event: CalendarEvent }
+  | { kind: 'login'; mode?: 'signIn' | 'signUp' }
   | { kind: 'confirm'; title: string; message: string; confirmLabel?: string; danger?: boolean; onConfirm: () => void }
 
 export interface Toast {

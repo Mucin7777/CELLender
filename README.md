@@ -55,8 +55,27 @@
 
 ## データの保存
 
-データはブラウザの `localStorage` に自動保存されます（サーバー不要、アプリを閉じても保持）。
-ブラウザのデータ消去や PC の変更に備え、**設定 → バックアップを保存** で定期的に保存してください。
+データはブラウザの `localStorage` に自動保存されます（アプリを閉じても保持、オフラインでも操作可）。
+
+### クラウド同期（PC とスマホで同じデータを使う）
+
+**設定 → クラウド同期** からメールアドレスとパスワードでログインすると、データが Supabase に保存され、どの端末でも同じ内容になります。
+
+- 変更は約 1 秒後に自動でクラウドへ送信。他の端末の変更は、リアルタイム通知・画面に戻ったとき・30 秒ごとの確認で取り込み
+- 2 台で同時に編集して内容が食い違ったときは、黙って上書きせず「クラウドの内容を使う／この端末の内容を使う」を選ぶ画面を表示
+- オフライン中の変更は、つながったときに送信。ログアウトしても端末のデータは残ります
+- データは行レベルセキュリティ（RLS）により、ログインした本人しか読み書きできません
+
+#### 初回だけ必要な準備（Supabase 側）
+
+1. Supabase のプロジェクト（LoveMatri と同じ `hmhiglayyilleuyepftp`）を開き、**SQL Editor** で [`supabase/setup.sql`](supabase/setup.sql) の内容を貼り付けて実行
+2. **Authentication → Sign In / Providers** で Email が有効になっていることを確認
+3. （推奨）**Authentication → URL Configuration** の Redirect URLs に `https://mucin7777.github.io/CELLender/` を追加（確認メールのリンクからアプリに戻れるようになります）
+
+接続先は `src/lib/cloud/config.ts`（ビルド時の環境変数 `VITE_SUPABASE_URL` / `VITE_SUPABASE_KEY` で上書き可）。
+ここに書く Publishable キーは公開して問題ない値です。
+
+ログインしない場合は、端末ごとにデータが分かれます。**設定 → バックアップを保存** で定期的にバックアップしてください。
 
 ## 開発
 
@@ -73,6 +92,7 @@ npm run preview    # ビルド結果のプレビュー
 - React 18 + TypeScript + Vite
 - Tailwind CSS v4
 - Zustand（状態管理 + localStorage 永続化）
+- Supabase（認証・クラウド同期。supabase-js は同期を使うときだけ読み込み）
 - date-fns（日付計算・日本語ロケール）
 - lucide-react（アイコン）
 
@@ -84,6 +104,8 @@ src/
   store/useStore.ts     データストア（全操作・永続化）
   store/useUI.ts        モーダル・トーストの状態
   store/usePrefs.ts     表示設定（週の始まり、カレンダーの帯の表示）
+  lib/cloud/            クラウド同期（sync.ts: 同期エンジン、supabaseBackend.ts: Supabase との通信）
+supabase/setup.sql      クラウド側のテーブルとアクセス制御（RLS）
   lib/events.ts         データ → カレンダーイベントへの変換
   views/                各画面
   components/           フォーム・共通 UI
