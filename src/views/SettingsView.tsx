@@ -7,6 +7,7 @@ import type { AppData } from '../types'
 import { usePrefs } from '../store/usePrefs'
 import { List, PageTitle, Row, SectionLabel, Segmented } from '../components/ui'
 import { CloudSettingsSection } from '../components/CloudSync'
+import { AppSection, NotifySection } from '../components/AppSettings'
 
 function download(filename: string, content: string, type: string) {
   const blob = new Blob([content], { type })
@@ -95,6 +96,8 @@ export function SettingsView() {
       </div>
 
       <CloudSettingsSection />
+      <NotifySection />
+      <AppSection />
 
       <SectionLabel>表示</SectionLabel>
       <List>

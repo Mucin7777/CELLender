@@ -35,6 +35,8 @@ export interface CloudBackend {
   saveDoc(userId: string, data: AppData, expectedRev: number | null, force?: boolean): Promise<SaveResult>
   /** 他の端末での更新を受け取る（未対応なら何もしない関数を返す） */
   subscribe(userId: string, cb: () => void): () => void
+  /** Edge Function を呼ぶ（ログイン中ならその利用者として） */
+  invoke<T = unknown>(name: string, body: unknown): Promise<T>
 }
 
 /** 利用者に見せる日本語のエラー文（Supabase などの英語のエラーを置き換える） */

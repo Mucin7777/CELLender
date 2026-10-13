@@ -1,0 +1,11 @@
+# Supabase CLI の設定（cellender の Edge Functions 用）
+# ゲートウェイでの JWT チェックは無効にしていますが、公開実行を許す意味ではありません。
+# cellender-push は関数内で auth.getUser により利用者を確認し、自分の購読だけを扱います。
+# cellender-reminders は専用の Cron 秘密値（x-cron-secret）を確認します。
+project_id = "hmhiglayyilleuyepftp"
+
+[functions.cellender-push]
+verify_jwt = false
+
+[functions.cellender-reminders]
+verify_jwt = false
