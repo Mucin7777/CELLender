@@ -15,11 +15,11 @@ export const EVENT_TYPE_META: Record<CalendarEventType, { label: string; color: 
   other: { label: 'その他', color: '#7c3aed', short: '予定' },
 }
 
-export const SEEDING_STATUS_META: Record<SeedingStatus, { label: string; className: string }> = {
-  culturing: { label: '培養中', className: 'bg-sky-100 text-sky-800 ring-sky-200' },
-  assay_scheduled: { label: 'アッセイ予定', className: 'bg-pink-100 text-pink-800 ring-pink-200' },
-  completed: { label: '完了', className: 'bg-emerald-100 text-emerald-800 ring-emerald-200' },
-  discarded: { label: '廃棄', className: 'bg-slate-100 text-slate-600 ring-slate-200' },
+export const SEEDING_STATUS_META: Record<SeedingStatus, { label: string; short: string; className: string }> = {
+  culturing: { label: '培養中', short: '培養中', className: 'bg-sky-50 text-sky-700' },
+  assay_scheduled: { label: 'アッセイ予定', short: '予定あり', className: 'bg-amber-50 text-amber-700' },
+  completed: { label: '完了', short: '完了', className: 'bg-emerald-50 text-emerald-700' },
+  discarded: { label: '廃棄', short: '廃棄', className: 'bg-gray-100 text-gray-500' },
 }
 
 export const PLATE_TYPES = [

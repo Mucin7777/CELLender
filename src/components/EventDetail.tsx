@@ -1,220 +1,170 @@
-import { CalendarDays, ExternalLink, Pencil, Trash2 } from 'lucide-react'
 import { useStore } from '../store/useStore'
 import { useUI, confirmDialog } from '../store/useUI'
-import { EVENT_TYPE_META } from '../lib/constants'
+import { EVENT_TYPE_META, SEEDING_STATUS_META } from '../lib/constants'
 import { cultureDay, fmt, relativeLabel } from '../lib/date'
 import { navigate } from '../lib/router'
 import type { CalendarEvent } from '../types'
-import { EVENT_ICONS } from './EventItem'
-import { LineDot, Modal, StatusBadge } from './ui'
+import { EVENT_ICONS } from './Agenda'
+import { LineDot, List, Row, Sheet } from './ui'
 
-export function EventDetail({ event: initial }: { event: CalendarEvent }) {
+export function EventDetail({ event: ev }: { event: CalendarEvent }) {
   const { close, closeAll, open, toast } = useUI()
   const st = useStore()
-  const line = initial.lineId ? st.lines.find((l) => l.id === initial.lineId) : undefined
-  const seeding = initial.seedingId ? st.seedings.find((s) => s.id === initial.seedingId) : undefined
-  const assay = initial.type === 'assay' ? st.assays.find((a) => a.id === initial.refId) : undefined
-  const task = initial.type === 'medium' || initial.type === 'other' ? st.tasks.find((t) => t.id === initial.refId) : undefined
-  const passage = initial.type === 'passage_done' ? st.passages.find((p) => p.id === initial.refId) : undefined
+  const line = ev.lineId ? st.lines.find((l) => l.id === ev.lineId) : undefined
+  const seeding = ev.seedingId ? st.seedings.find((s) => s.id === ev.seedingId) : undefined
+  const assay = ev.type === 'assay' ? st.assays.find((a) => a.id === ev.refId) : undefined
+  const task = ev.type === 'medium' || ev.type === 'other' ? st.tasks.find((t) => t.id === ev.refId) : undefined
+  const passage = ev.type === 'passage_done' ? st.passages.find((p) => p.id === ev.refId) : undefined
 
-  // 最新状態を反映
-  const date = initial.type === 'passage_plan' ? (line?.nextPassageDate ?? initial.date) : (assay?.date ?? task?.date ?? seeding?.date ?? passage?.date ?? initial.date)
-  const done = assay?.done ?? task?.done ?? initial.done
-  const meta = EVENT_TYPE_META[initial.type]
-  const Icon = EVENT_ICONS[initial.type]
+  // ストアの最新状態を反映
+  const date =
+    ev.type === 'passage_plan' ? (line?.nextPassageDate ?? ev.date) : (assay?.date ?? task?.date ?? passage?.date ?? (ev.type === 'seeding' ? seeding?.date : undefined) ?? ev.date)
+  const done = assay?.done ?? task?.done ?? ev.done
+  const Icon = EVENT_ICONS[ev.type]
+  const title = assay?.name ?? task?.title ?? (ev.type === 'seeding' ? `${line?.name ?? ''} を播種` : line?.name) ?? ev.title
+  const notes = assay?.notes || task?.notes || passage?.notes || (ev.type === 'seeding' ? seeding?.notes : '')
 
-  const goLine = () => {
+  const go = (to: Parameters<typeof navigate>[0]) => {
     closeAll()
-    if (line) navigate({ view: 'lines', id: line.id })
-  }
-  const goSeeding = () => {
-    closeAll()
-    if (seeding) navigate({ view: 'seedings', id: seeding.id })
+    navigate(to)
   }
 
-  const notes = assay?.notes || task?.notes || passage?.notes || (initial.type === 'seeding' ? seeding?.notes : '')
+  const primary = (() => {
+    if (ev.type === 'passage_plan' && line)
+      return (
+        <button className="btn-primary flex-1" onClick={() => { close(); open({ kind: 'passage', lineId: line.id }) }}>
+          継代を記録する
+        </button>
+      )
+    if (assay)
+      return (
+        <button className={assay.done ? 'btn-secondary flex-1' : 'btn-primary flex-1'} onClick={() => st.setAssayDone(assay.id, !assay.done)}>
+          {assay.done ? '未実施に戻す' : '実施済みにする'}
+        </button>
+      )
+    if (task)
+      return (
+        <button className={task.done ? 'btn-secondary flex-1' : 'btn-primary flex-1'} onClick={() => st.updateTask(task.id, { done: !task.done })}>
+          {task.done ? '未完了に戻す' : '完了にする'}
+        </button>
+      )
+    if (ev.type === 'seeding' && seeding)
+      return (
+        <button className="btn-primary flex-1" onClick={() => go({ view: 'seedings', id: seeding.id })}>
+          播種記録を開く
+        </button>
+      )
+    if (passage && line)
+      return (
+        <button className="btn-secondary flex-1" onClick={() => go({ view: 'lines', id: line.id })}>
+          ラインを開く
+        </button>
+      )
+    return null
+  })()
+
+  const onEdit = assay
+    ? () => open({ kind: 'assay', id: assay.id })
+    : task
+      ? () => open({ kind: 'task', id: task.id })
+      : ev.type === 'seeding' && seeding
+        ? () => open({ kind: 'seeding', id: seeding.id })
+        : undefined
+
+  const onDelete = assay || task || passage
+    ? () =>
+        confirmDialog({
+          title: passage ? '継代記録を取り消しますか？' : '削除しますか？',
+          message: passage ? '最新の継代なら、ラインのP数と予定日も元に戻ります。' : `「${title}」を削除します。`,
+          confirmLabel: passage ? '取り消す' : '削除',
+          danger: true,
+          onConfirm: () => {
+            if (assay) st.deleteAssay(assay.id)
+            if (task) st.deleteTask(task.id)
+            if (passage) st.deletePassage(passage.id)
+            closeAll()
+            toast(passage ? '継代記録を取り消しました' : '削除しました')
+          },
+        })
+    : undefined
 
   return (
-    <Modal
-      size="sm"
+    <Sheet
       onClose={close}
-      title={
-        <span className="flex items-center gap-2">
-          <span className="flex size-7 items-center justify-center rounded-lg text-white" style={{ backgroundColor: meta.color }}>
-            <Icon className="size-4" />
-          </span>
-          {meta.label}
-        </span>
-      }
-      footer={
-        <div className="flex w-full flex-wrap items-center gap-2">
-          {(assay || task) && (
-            <button
-              className="btn-ghost text-rose-600 hover:bg-rose-50"
-              onClick={() =>
-                confirmDialog({
-                  title: '削除しますか？',
-                  message: `「${assay?.name ?? task?.title}」を削除します。`,
-                  confirmLabel: '削除',
-                  danger: true,
-                  onConfirm: () => {
-                    if (assay) st.deleteAssay(assay.id)
-                    if (task) st.deleteTask(task.id)
-                    closeAll()
-                    toast('削除しました')
-                  },
-                })
-              }
-            >
-              <Trash2 className="size-4" />
-            </button>
-          )}
-          {passage && (
-            <button
-              className="btn-ghost text-rose-600 hover:bg-rose-50"
-              onClick={() =>
-                confirmDialog({
-                  title: '継代記録を取り消し',
-                  message: '最新の継代記録の場合、ラインの継代数と予定日も元に戻ります。',
-                  confirmLabel: '取り消す',
-                  danger: true,
-                  onConfirm: () => {
-                    st.deletePassage(passage.id)
-                    closeAll()
-                    toast('継代記録を取り消しました')
-                  },
-                })
-              }
-            >
-              <Trash2 className="size-4" />
-              取り消し
-            </button>
-          )}
-          <div className="ml-auto flex flex-wrap gap-2">
-            {assay && (
-              <button className="btn-secondary" onClick={() => open({ kind: 'assay', id: assay.id })}>
-                <Pencil className="size-4" />
-                編集
-              </button>
-            )}
-            {task && (
-              <button className="btn-secondary" onClick={() => open({ kind: 'task', id: task.id })}>
-                <Pencil className="size-4" />
-                編集
-              </button>
-            )}
-            {initial.type === 'seeding' && seeding && (
-              <button className="btn-secondary" onClick={() => open({ kind: 'seeding', id: seeding.id })}>
-                <Pencil className="size-4" />
-                編集
-              </button>
-            )}
-            {assay && (
-              <button className="btn-primary" onClick={() => st.setAssayDone(assay.id, !assay.done)}>
-                {assay.done ? '未完了に戻す' : '実施済みにする'}
-              </button>
-            )}
-            {task && (
-              <button className="btn-primary" onClick={() => st.updateTask(task.id, { done: !task.done })}>
-                {task.done ? '未完了に戻す' : '完了にする'}
-              </button>
-            )}
-            {initial.type === 'passage_plan' && line && (
-              <button
-                className="btn-primary"
-                onClick={() => {
-                  close()
-                  open({ kind: 'passage', lineId: line.id })
-                }}
-              >
-                継代を記録
-              </button>
-            )}
-          </div>
-        </div>
-      }
+      headerRight={onEdit && <button className="btn-ghost btn-sm" onClick={onEdit}>編集</button>}
+      footer={primary}
     >
-      <div className="space-y-4">
-        <div>
-          <div className="text-lg font-bold text-slate-900">{assay?.name ?? task?.title ?? line?.name ?? initial.title}</div>
-          <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-slate-500">
-            <span className="flex items-center gap-1">
-              <CalendarDays className="size-4" />
-              {fmt(date, 'yyyy/M/d (E)')}
-              {assay?.time && ` ${assay.time}`}
-            </span>
-            <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs">{relativeLabel(date)}</span>
-            {done && <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs text-emerald-700">完了</span>}
+      <div className="mb-5 flex items-start gap-3">
+        <span className="mt-1 flex size-10 shrink-0 items-center justify-center rounded-xl bg-canvas text-sub">
+          <Icon className="size-5" />
+        </span>
+        <div className="min-w-0">
+          <div className="text-[13px] font-medium text-sub">{EVENT_TYPE_META[ev.type].label}{done && ' · 完了'}</div>
+          <div className="text-[22px] font-bold leading-snug">{title}</div>
+          <div className="mt-0.5 text-[14px] text-sub">
+            {fmt(date, 'M月d日 (E)')}
+            {assay?.time && ` ${assay.time}`}・{relativeLabel(date)}
           </div>
         </div>
+      </div>
 
-        {initial.type === 'passage_plan' && line && (
-          <div className="grid grid-cols-3 gap-2 text-center">
-            <Stat label="現在" value={`P${line.passageNumber}`} />
-            <Stat label="前回継代" value={line.lastPassageDate ? fmt(line.lastPassageDate, 'M/d') : '—'} />
-            <Stat label="間隔" value={line.passageIntervalDays ? `${line.passageIntervalDays}日` : '—'} />
-          </div>
-        )}
-        {initial.type === 'passage_plan' && line && (
-          <label className="block">
-            <span className="label">予定日を変更</span>
-            <input className="input" type="date" value={line.nextPassageDate ?? ''} onChange={(e) => st.updateLine(line.id, { nextPassageDate: e.target.value || null })} />
+      <List className="bg-canvas">
+        {ev.movable && (
+          <label className="flex min-h-14 items-center gap-3 px-4">
+            <span className="flex-1 text-[15px] font-semibold">日付を変更</span>
+            <input
+              type="date"
+              className="rounded-lg bg-white px-2 py-1.5 text-[15px] outline-none focus:ring-2 focus:ring-brand-500"
+              value={date}
+              onChange={(e) => e.target.value && st.moveEvent({ ...ev, date }, e.target.value)}
+            />
           </label>
         )}
-        {passage && (
-          <div className="grid grid-cols-2 gap-2 text-center">
-            <Stat label="継代後" value={`P${passage.passageNumber}`} />
-            <Stat label="分割比" value={passage.splitRatio || '—'} />
-          </div>
+        {ev.type === 'passage_plan' && line && (
+          <Row title="継代数" right={<span className="font-mono text-[15px]">P{line.passageNumber} → P{line.passageNumber + 1}</span>} />
         )}
-
+        {passage && <Row title="継代後" right={<span className="font-mono text-[15px]">P{passage.passageNumber}{passage.splitRatio && ` (${passage.splitRatio})`}</span>} />}
         {line && (
-          <button onClick={goLine} className="flex w-full items-center gap-3 rounded-xl border border-slate-200 p-3 text-left transition hover:border-brand-200 hover:bg-brand-50/40">
-            <LineDot color={line.color} className="size-3" />
-            <div className="min-w-0 flex-1">
-              <div className="text-xs text-slate-400">細胞ライン</div>
-              <div className="truncate text-sm font-medium text-slate-800">{line.name}</div>
-            </div>
-            <span className="font-mono text-xs text-slate-500">P{line.passageNumber}</span>
-            <ExternalLink className="size-4 text-slate-400" />
-          </button>
+          <Row
+            onClick={() => go({ view: 'lines', id: line.id })}
+            left={<LineDot color={line.color} className="size-3" />}
+            title={line.name}
+            sub={`細胞ライン · 現在 P${line.passageNumber}`}
+            chevron
+          />
         )}
-        {seeding && (
-          <button onClick={goSeeding} className="flex w-full items-center gap-3 rounded-xl border border-slate-200 p-3 text-left transition hover:border-brand-200 hover:bg-brand-50/40">
-            <div className="min-w-0 flex-1">
-              <div className="text-xs text-slate-400">播種記録 · {fmt(seeding.date, 'M/d')} 播種 · Day {cultureDay(seeding.date, date)}</div>
-              <div className="truncate text-sm font-medium text-slate-800">
-                {seeding.plateType}
-                {seeding.purpose && <span className="font-normal text-slate-500"> — {seeding.purpose}</span>}
-              </div>
-            </div>
-            <StatusBadge status={seeding.status} />
-            <ExternalLink className="size-4 shrink-0 text-slate-400" />
-          </button>
+        {seeding && ev.type !== 'seeding' && (
+          <Row
+            onClick={() => go({ view: 'seedings', id: seeding.id })}
+            title={`${fmt(seeding.date, 'M/d')} 播種 · ${seeding.plateType}`}
+            sub={`${cultureDay(seeding.date, date)}日目 · ${SEEDING_STATUS_META[seeding.status].label}${seeding.purpose ? ` · ${seeding.purpose}` : ''}`}
+            chevron
+          />
         )}
+      </List>
 
-        {notes && (
-          <div>
-            <div className="label">メモ</div>
-            <p className="whitespace-pre-wrap text-sm text-slate-700">{notes}</p>
-          </div>
-        )}
-        {assay?.result && (
-          <div>
-            <div className="label">結果</div>
-            <p className="whitespace-pre-wrap text-sm text-slate-700">{assay.result}</p>
-          </div>
-        )}
-      </div>
-    </Modal>
-  )
-}
+      {(notes || assay?.result) && (
+        <div className="mt-4 space-y-3 rounded-2xl bg-canvas px-4 py-3 text-[14px]">
+          {notes && (
+            <div>
+              <div className="text-[12px] font-medium text-sub">メモ</div>
+              <p className="whitespace-pre-wrap">{notes}</p>
+            </div>
+          )}
+          {assay?.result && (
+            <div>
+              <div className="text-[12px] font-medium text-sub">結果</div>
+              <p className="whitespace-pre-wrap">{assay.result}</p>
+            </div>
+          )}
+        </div>
+      )}
 
-function Stat({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-xl bg-slate-50 px-2 py-2">
-      <div className="text-[11px] text-slate-400">{label}</div>
-      <div className="font-semibold text-slate-800">{value}</div>
-    </div>
+      {onDelete && (
+        <button className="mt-4 min-h-11 w-full text-[15px] font-semibold text-rose-600" onClick={onDelete}>
+          {passage ? 'この継代記録を取り消す' : '削除'}
+        </button>
+      )}
+    </Sheet>
   )
 }

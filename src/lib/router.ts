@@ -1,33 +1,24 @@
 import { useEffect, useState } from 'react'
 
-export type Route =
-  | { view: 'today' }
-  | { view: 'calendar' }
-  | { view: 'lines'; id?: string }
-  | { view: 'seedings'; id?: string }
-  | { view: 'assays' }
-  | { view: 'settings' }
+export type Route = { view: 'home' } | { view: 'lines'; id?: string } | { view: 'seedings'; id?: string } | { view: 'settings' }
 
 export function parseHash(hash: string): Route {
   const [view, id] = hash.replace(/^#\/?/, '').split('/')
   switch (view) {
-    case 'calendar':
-      return { view: 'calendar' }
     case 'lines':
       return { view: 'lines', id: id || undefined }
     case 'seedings':
-      return { view: 'seedings', id: id || undefined }
     case 'assays':
-      return { view: 'assays' }
+      return { view: 'seedings', id: (view === 'seedings' && id) || undefined }
     case 'settings':
       return { view: 'settings' }
     default:
-      return { view: 'today' }
+      return { view: 'home' }
   }
 }
 
 export const routeToHash = (r: Route): string => {
-  if (r.view === 'today') return '#/'
+  if (r.view === 'home') return '#/'
   if ((r.view === 'lines' || r.view === 'seedings') && r.id) return `#/${r.view}/${r.id}`
   return `#/${r.view}`
 }
@@ -41,7 +32,7 @@ export function useRoute(): Route {
   useEffect(() => {
     const onChange = () => {
       setRoute(parseHash(window.location.hash))
-      document.getElementById('main-scroll')?.scrollTo({ top: 0 })
+      window.scrollTo({ top: 0 })
     }
     window.addEventListener('hashchange', onChange)
     return () => window.removeEventListener('hashchange', onChange)

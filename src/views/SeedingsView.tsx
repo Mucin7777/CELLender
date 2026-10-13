@@ -1,141 +1,154 @@
 import { useMemo, useState } from 'react'
-import { ArrowLeft, Beaker, Copy, Droplets, FlaskConical, Pencil, Plus, Search } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Copy, FlaskConical, Plus } from 'lucide-react'
 import { useStore } from '../store/useStore'
 import { useUI } from '../store/useUI'
 import { SEEDING_STATUS_META } from '../lib/constants'
-import { cultureDay, fmt, relativeLabel, todayStr } from '../lib/date'
+import { addDaysStr, cultureDay, fmt, relativeLabel, todayStr } from '../lib/date'
 import { navigate } from '../lib/router'
+import { useCalendarEvents } from '../lib/useCalendarEvents'
 import type { Seeding, SeedingStatus } from '../types'
-import { Checkbox, EmptyState, LineDot, PageHeader, Segmented, StatusBadge, cx } from '../components/ui'
-import { Section } from './TodayView'
+import { AgendaRow } from '../components/Agenda'
+import { Check, EmptyState, List, PageTitle, Row, SectionLabel, Segmented, StatusBadge, cx } from '../components/ui'
 
 export function SeedingsView({ id }: { id?: string }) {
   return id ? <SeedingDetail id={id} /> : <SeedingList />
 }
 
-type Tab = 'active' | 'completed' | 'discarded' | 'all'
+type Tab = 'active' | 'assays' | 'done'
+const isActive = (s: Seeding) => s.status === 'culturing' || s.status === 'assay_scheduled'
 
 function SeedingList() {
   const { seedings, lines, assays } = useStore()
   const open = useUI((s) => s.open)
   const today = todayStr()
   const [tab, setTab] = useState<Tab>('active')
-  const [lineFilter, setLineFilter] = useState('')
-  const [q, setQ] = useState('')
   const lineById = useMemo(() => new Map(lines.map((l) => [l.id, l])), [lines])
 
-  const matchTab = (s: Seeding) =>
-    tab === 'all' || (tab === 'active' ? s.status === 'culturing' || s.status === 'assay_scheduled' : s.status === tab)
-
-  const shown = useMemo(() => {
-    const query = q.trim().toLowerCase()
-    return seedings
-      .filter(matchTab)
-      .filter((s) => !lineFilter || s.lineId === lineFilter)
-      .filter((s) => !query || [s.plateType, s.purpose, s.notes, lineById.get(s.lineId)?.name].join(' ').toLowerCase().includes(query))
-      .sort((a, b) => (a.date < b.date ? 1 : -1))
-  }, [seedings, tab, lineFilter, q, lineById])
-
-  const count = (t: Tab) => seedings.filter((s) => t === 'all' || (t === 'active' ? s.status === 'culturing' || s.status === 'assay_scheduled' : s.status === t)).length
+  const list = useMemo(
+    () => seedings.filter((s) => (tab === 'active' ? isActive(s) : !isActive(s))).sort((a, b) => (a.date < b.date ? 1 : -1)),
+    [seedings, tab],
+  )
 
   return (
-    <div className="mx-auto max-w-6xl">
-      <PageHeader
-        title="播種記録"
-        subtitle="プレートへの播種を、継代とは独立した単位で管理します"
-        actions={
-          <button className="btn-primary" onClick={() => open({ kind: 'seeding' })}>
-            <Plus className="size-4" />
-            播種を記録
+    <div>
+      <PageTitle
+        title="播種"
+        right={
+          <button className="icon-btn bg-white text-brand-700" onClick={() => open({ kind: 'seeding' })} aria-label="播種を記録">
+            <Plus className="size-5" />
           </button>
         }
       />
-      <div className="mb-4 flex flex-wrap items-center gap-2">
-        <Segmented<Tab>
+      <div className="mb-4">
+        <Segmented
+          full
           value={tab}
           onChange={setTab}
           options={[
-            { value: 'active', label: `進行中 ${count('active')}` },
-            { value: 'completed', label: `完了 ${count('completed')}` },
-            { value: 'discarded', label: `廃棄 ${count('discarded')}` },
-            { value: 'all', label: 'すべて' },
+            { value: 'active', label: `培養中 ${seedings.filter(isActive).length}` },
+            { value: 'assays', label: 'アッセイ' },
+            { value: 'done', label: '終了' },
           ]}
         />
-        <select className="input w-auto py-1.5" value={lineFilter} onChange={(e) => setLineFilter(e.target.value)}>
-          <option value="">すべてのライン</option>
-          {lines.map((l) => (
-            <option key={l.id} value={l.id}>
-              {l.name}
-            </option>
-          ))}
-        </select>
-        <div className="relative ml-auto w-full sm:w-56">
-          <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
-          <input className="input py-1.5 pl-8" placeholder="検索（目的・プレート…）" value={q} onChange={(e) => setQ(e.target.value)} />
-        </div>
       </div>
 
-      {shown.length === 0 ? (
-        <div className="card">
+      {tab === 'assays' ? (
+        <AssayTab />
+      ) : list.length === 0 ? (
+        <div className="group-card">
           <EmptyState
-            icon={<FlaskConical className="size-5" />}
-            title="該当する播種記録はありません"
-            description="細胞ラインからプレートに播種したら、ここに記録しましょう。"
-            action={<button className="btn-primary" onClick={() => open({ kind: 'seeding' })}><Plus className="size-4" />播種を記録</button>}
+            icon={<FlaskConical className="size-8" />}
+            title={tab === 'active' ? '培養中の播種はありません' : '終了した播種はありません'}
+            action={tab === 'active' && <button className="btn-primary" onClick={() => open({ kind: 'seeding' })}>播種を記録</button>}
           />
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {shown.map((s) => {
+        <List>
+          {list.map((s) => {
             const line = lineById.get(s.lineId)
-            const sa = assays.filter((a) => a.seedingId === s.id).sort((a, b) => (a.date < b.date ? -1 : 1))
-            const doneCount = sa.filter((a) => a.done).length
-            const next = sa.find((a) => !a.done)
-            const active = s.status === 'culturing' || s.status === 'assay_scheduled'
+            const next = assays.filter((a) => a.seedingId === s.id && !a.done).sort((a, b) => (a.date < b.date ? -1 : 1))[0]
+            const active = isActive(s)
             return (
-              <div key={s.id} onClick={() => navigate({ view: 'seedings', id: s.id })} className="card cursor-pointer p-4 transition hover:-translate-y-0.5 hover:shadow-md">
-                <div className="flex items-start gap-3">
-                  <div className="flex w-14 shrink-0 flex-col items-center rounded-xl py-1.5" style={{ backgroundColor: `${line?.color ?? '#94a3b8'}14` }}>
-                    <span className="text-[10px] font-medium" style={{ color: line?.color }}>{active ? 'Day' : fmt(s.date, 'yyyy')}</span>
-                    <span className="text-lg font-bold leading-tight" style={{ color: line?.color }}>{active ? cultureDay(s.date, today) : fmt(s.date, 'M/d')}</span>
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-1.5">
-                      {line && <LineDot color={line.color} />}
-                      <span className="truncate text-sm font-bold text-slate-900">{line?.name ?? '(削除済み)'}</span>
-                    </div>
-                    <div className="mt-0.5 truncate text-xs text-slate-500">
-                      {fmt(s.date, 'M/d (E)')} 播種 · {s.plateType}
-                      {s.passageNumber !== null && ` · P${s.passageNumber}`}
-                    </div>
-                  </div>
-                  <StatusBadge status={s.status} />
-                </div>
-                {s.purpose && <p className="mt-3 line-clamp-2 text-sm text-slate-700">{s.purpose}</p>}
-                <div className="mt-3 flex items-center gap-3 border-t border-slate-100 pt-3 text-xs">
-                  {sa.length > 0 ? (
+              <button key={s.id} onClick={() => navigate({ view: 'seedings', id: s.id })} className="flex w-full items-center gap-3 px-4 py-3 text-left transition active:bg-black/[.03]">
+                <span
+                  className="flex size-12 shrink-0 flex-col items-center justify-center rounded-xl leading-none"
+                  style={{ backgroundColor: `${line?.color ?? '#9ca3af'}1a`, color: line?.color ?? '#6b7280' }}
+                >
+                  {active ? (
                     <>
-                      <span className="flex items-center gap-1 text-slate-500">
-                        <Beaker className="size-3.5" />
-                        {doneCount}/{sa.length}
-                      </span>
-                      <div className="h-1 flex-1 overflow-hidden rounded-full bg-slate-100">
-                        <div className="h-full rounded-full bg-pink-500" style={{ width: `${(doneCount / sa.length) * 100}%` }} />
-                      </div>
-                      {next && (
-                        <span className={cx('truncate', next.date < today ? 'font-semibold text-rose-600' : next.date === today ? 'font-semibold text-pink-600' : 'text-slate-500')}>
-                          {next.name} · {relativeLabel(next.date)}
-                        </span>
-                      )}
+                      <span className="text-[18px] font-bold">{cultureDay(s.date, today)}</span>
+                      <span className="mt-0.5 text-[10px] font-semibold">日目</span>
                     </>
                   ) : (
-                    <span className="text-slate-400">アッセイ未設定</span>
+                    <span className="text-[13px] font-bold">{fmt(s.date, 'M/d')}</span>
+                  )}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <div className="truncate text-[15px] font-semibold">{line?.name ?? '(削除済み)'}</div>
+                  <div className="truncate text-[13px] text-sub">
+                    {s.plateType}
+                    {s.purpose && ` · ${s.purpose}`}
+                  </div>
+                  {active && next && (
+                    <div className={cx('mt-0.5 truncate text-[13px] font-medium', next.date <= today ? 'text-amber-700' : 'text-sub')}>
+                      次: {next.name}（{relativeLabel(next.date)}）
+                    </div>
                   )}
                 </div>
-              </div>
+                {!active && <StatusBadge status={s.status} />}
+                <ChevronRight className="size-4 shrink-0 text-faint" />
+              </button>
             )
           })}
+        </List>
+      )}
+    </div>
+  )
+}
+
+/** アッセイの予定と実施履歴 */
+function AssayTab() {
+  const events = useCalendarEvents()
+  const today = todayStr()
+  const [historyCount, setHistoryCount] = useState(10)
+  const assayEvents = events.filter((e) => e.type === 'assay')
+  const pending = assayEvents.filter((e) => !e.done)
+  const history = assayEvents.filter((e) => e.done).reverse()
+  const tomorrow = addDaysStr(today, 1)
+  const groups = [
+    { title: '遅れている', tone: 'danger' as const, items: pending.filter((e) => e.date < today) },
+    { title: '今日', items: pending.filter((e) => e.date === today) },
+    { title: '明日', items: pending.filter((e) => e.date === tomorrow) },
+    { title: 'それ以降', items: pending.filter((e) => e.date > tomorrow) },
+  ].filter((g) => g.items.length > 0)
+
+  return (
+    <div>
+      {groups.length === 0 && <div className="group-card py-8 text-center text-[14px] text-sub">予定されているアッセイはありません</div>}
+      {groups.map((g) => (
+        <div key={g.title}>
+          <SectionLabel tone={g.tone}>{g.title}</SectionLabel>
+          <List>
+            {g.items.map((e) => (
+              <AgendaRow key={e.key} event={e} prefix={g.title === '今日' || g.title === '明日' ? undefined : fmt(e.date, 'M/d')} overdue={g.tone === 'danger'} />
+            ))}
+          </List>
         </div>
+      ))}
+      {history.length > 0 && (
+        <>
+          <SectionLabel>実施済み</SectionLabel>
+          <List>
+            {history.slice(0, historyCount).map((e) => (
+              <AgendaRow key={e.key} event={e} prefix={fmt(e.date, 'M/d')} />
+            ))}
+            {history.length > historyCount && (
+              <button className="min-h-12 w-full text-[14px] font-semibold text-brand-700" onClick={() => setHistoryCount((n) => n + 20)}>
+                さらに表示
+              </button>
+            )}
+          </List>
+        </>
       )}
     </div>
   )
@@ -147,152 +160,137 @@ function SeedingDetail({ id }: { id: string }) {
   const today = todayStr()
   const seeding = st.seedings.find((s) => s.id === id)
   const line = seeding ? st.lines.find((l) => l.id === seeding.lineId) : undefined
-  const assays = useMemo(() => st.assays.filter((a) => a.seedingId === id).sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : a.time.localeCompare(b.time))), [st.assays, id])
+  const assays = useMemo(
+    () => st.assays.filter((a) => a.seedingId === id).sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : a.time.localeCompare(b.time))),
+    [st.assays, id],
+  )
   const tasks = useMemo(() => st.tasks.filter((t) => t.seedingId === id).sort((a, b) => (a.date < b.date ? -1 : 1)), [st.tasks, id])
+  const [showDoneTasks, setShowDoneTasks] = useState(false)
 
-  if (!seeding) {
-    return (
-      <div className="card mx-auto max-w-xl">
-        <EmptyState icon={<FlaskConical className="size-5" />} title="播種記録が見つかりません" action={<button className="btn-secondary" onClick={() => navigate({ view: 'seedings' })}>一覧へ戻る</button>} />
-      </div>
-    )
-  }
+  const back = (
+    <button className="flex min-h-11 items-center px-2 text-[15px] font-semibold text-brand-700" onClick={() => navigate({ view: 'seedings' })}>
+      <ChevronLeft className="size-5" />
+      播種
+    </button>
+  )
+  if (!seeding) return <EmptyState title="播種記録が見つかりません" action={back} />
 
   const duplicate = () => {
     const { lineId, plateType, passageNumber, density, wells, purpose, notes } = seeding
     const newId = st.addSeeding({ lineId, plateType, passageNumber, density, wells, purpose, notes, date: today })
-    toast('播種記録を複製しました（播種日は今日）')
+    toast('同じ条件で今日の播種を作成しました')
     navigate({ view: 'seedings', id: newId })
-    open({ kind: 'seeding', id: newId })
   }
-
-  const day = cultureDay(seeding.date, today)
+  const visibleTasks = showDoneTasks ? tasks : tasks.filter((t) => !t.done)
 
   return (
-    <div className="mx-auto max-w-5xl">
-      <button className="btn-ghost btn-sm -ml-2 mb-3" onClick={() => navigate({ view: 'seedings' })}>
-        <ArrowLeft className="size-4" />
-        播種記録一覧
+    <div>
+      <PageTitle
+        back={back}
+        sub={`${fmt(seeding.date, 'M/d (E)')} 播種 · ${cultureDay(seeding.date, today)}日目`}
+        title={seeding.plateType}
+        right={<button className="btn-ghost btn-sm" onClick={() => open({ kind: 'seeding', id: seeding.id })}>編集</button>}
+      />
+
+      <button
+        className="group-card flex min-h-14 w-full items-center gap-3 px-4 text-left active:bg-black/[.03]"
+        onClick={() => line && navigate({ view: 'lines', id: line.id })}
+      >
+        <span className="size-3 shrink-0 rounded-full" style={{ backgroundColor: line?.color }} />
+        <span className="flex-1 truncate text-[15px] font-semibold">{line?.name ?? '(削除済み)'}</span>
+        {seeding.passageNumber !== null && <span className="font-mono text-[14px] text-sub">P{seeding.passageNumber}</span>}
+        <ChevronRight className="size-4 text-faint" />
       </button>
+      {seeding.purpose && <p className="mt-3 px-1 text-[15px]">{seeding.purpose}</p>}
 
-      <div className="card mb-5 overflow-hidden">
-        <div className="flex flex-wrap items-start gap-4 p-5">
-          <div className="flex w-16 shrink-0 flex-col items-center rounded-2xl py-2" style={{ backgroundColor: `${line?.color ?? '#94a3b8'}18`, color: line?.color }}>
-            <span className="text-[11px] font-semibold">Day</span>
-            <span className="text-2xl font-bold leading-none">{day}</span>
-          </div>
-          <div className="min-w-0 flex-1">
-            <button className="flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-brand-700" onClick={() => line && navigate({ view: 'lines', id: line.id })}>
-              {line && <LineDot color={line.color} />}
-              {line?.name ?? '(削除済み)'}
-              {seeding.passageNumber !== null && <span className="font-mono text-xs">· P{seeding.passageNumber}</span>}
-            </button>
-            <h1 className="mt-0.5 text-xl font-bold tracking-tight text-slate-900 sm:text-2xl">
-              {fmt(seeding.date, 'M/d (E)')} 播種 · {seeding.plateType}
-            </h1>
-            {seeding.purpose && <p className="mt-1 text-sm text-slate-600">{seeding.purpose}</p>}
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <button className="btn-secondary" onClick={duplicate} title="同条件で新しい播種記録を作成">
-              <Copy className="size-4" />
-              複製
-            </button>
-            <button className="btn-secondary" onClick={() => open({ kind: 'seeding', id: seeding.id })}>
-              <Pencil className="size-4" />
-              編集
-            </button>
-            <button className="btn-primary" onClick={() => open({ kind: 'assay', seedingId: seeding.id })}>
-              <Plus className="size-4" />
-              アッセイ
-            </button>
-          </div>
-        </div>
-        <div className="flex flex-wrap items-center gap-2 border-t border-slate-100 bg-slate-50/50 px-5 py-3">
-          <span className="mr-1 text-xs text-slate-500">状態:</span>
-          {(Object.keys(SEEDING_STATUS_META) as SeedingStatus[]).map((k) => (
-            <button
-              key={k}
-              onClick={() => st.updateSeeding(seeding.id, { status: k })}
-              className={cx(
-                'rounded-full px-3 py-1 text-xs font-medium ring-1 ring-inset transition',
-                seeding.status === k ? SEEDING_STATUS_META[k].className : 'bg-white text-slate-500 ring-slate-200 hover:bg-slate-50',
-              )}
-            >
-              {SEEDING_STATUS_META[k].label}
-            </button>
-          ))}
-        </div>
-        <div className="grid grid-cols-2 gap-4 border-t border-slate-100 p-5 text-sm sm:grid-cols-4">
-          <KV k="播種日" v={fmt(seeding.date, 'yyyy/M/d (E)')} />
-          <KV k="プレート" v={seeding.plateType || '—'} />
-          <KV k="播種密度" v={seeding.density || '—'} />
-          <KV k="使用ウェル" v={seeding.wells || '—'} />
-          {seeding.notes && <KV k="メモ" v={seeding.notes} className="col-span-2 sm:col-span-4" />}
-        </div>
+      <div className="mt-4">
+        <Segmented
+          full
+          value={seeding.status}
+          onChange={(v) => st.updateSeeding(seeding.id, { status: v })}
+          options={(Object.keys(SEEDING_STATUS_META) as SeedingStatus[]).map((k) => ({ value: k, label: SEEDING_STATUS_META[k].short }))}
+        />
       </div>
 
-      <div className="grid grid-cols-1 gap-5 lg:grid-cols-5">
-        <div className="lg:col-span-3">
-          <Section title={`アッセイ (${assays.filter((a) => a.done).length}/${assays.length})`} icon={<Beaker className="size-4 text-pink-600" />} right={<button className="btn-ghost btn-sm text-brand-700" onClick={() => open({ kind: 'assay', seedingId: seeding.id })}><Plus className="size-3.5" />追加</button>}>
-            {assays.length === 0 ? (
-              <EmptyState icon={<Beaker className="size-5" />} title="アッセイ予定はまだありません" action={<button className="btn-secondary btn-sm" onClick={() => open({ kind: 'assay', seedingId: seeding.id })}>アッセイを予定</button>} />
-            ) : (
-              <div className="relative px-3 pb-2">
-                <div className="absolute bottom-5 left-[21px] top-4 w-px bg-slate-200" />
-                {assays.map((a) => {
-                  const overdue = !a.done && a.date < today
-                  const isToday = a.date === today
-                  return (
-                    <div key={a.id} className="group relative flex cursor-pointer items-start gap-3 rounded-xl py-2.5 pr-2 hover:bg-slate-50" onClick={() => open({ kind: 'assay', id: a.id })}>
-                      <div className="relative z-10 mt-0.5 bg-white">
-                        <Checkbox checked={a.done} onChange={() => st.setAssayDone(a.id, !a.done)} color="#db2777" label="実施済み" />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex flex-wrap items-center gap-x-2">
-                          <span className={cx('text-sm font-semibold text-slate-800', a.done && 'text-slate-400 line-through')}>{a.name}</span>
-                          <span className="rounded bg-slate-100 px-1.5 text-[10px] font-medium text-slate-500">Day {cultureDay(seeding.date, a.date)}</span>
-                        </div>
-                        <div className={cx('text-xs', overdue ? 'font-medium text-rose-600' : isToday ? 'font-medium text-pink-600' : 'text-slate-500')}>
-                          {fmt(a.date, 'M/d (E)')}
-                          {a.time && ` ${a.time}`} · {a.done ? `完了${a.doneAt ? ` (${fmt(a.doneAt.slice(0, 10), 'M/d')})` : ''}` : relativeLabel(a.date)}
-                        </div>
-                        {a.notes && <div className="mt-0.5 text-xs text-slate-500">{a.notes}</div>}
-                        {a.result && <div className="mt-1 rounded-lg bg-emerald-50 px-2 py-1 text-xs text-emerald-800">結果: {a.result}</div>}
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            )}
-          </Section>
-        </div>
-        <div className="lg:col-span-2">
-          <Section title="培地交換・その他" icon={<Droplets className="size-4 text-amber-600" />} right={<button className="btn-ghost btn-sm text-brand-700" onClick={() => open({ kind: 'task', lineId: seeding.lineId, seedingId: seeding.id, taskKind: 'medium' })}><Plus className="size-3.5" />追加</button>}>
-            {tasks.length === 0 ? (
-              <p className="px-3 py-6 text-center text-sm text-slate-400">予定はありません</p>
-            ) : (
-              tasks.map((t) => (
-                <div key={t.id} className="flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2 hover:bg-slate-50" onClick={() => open({ kind: 'task', id: t.id })}>
-                  <Checkbox checked={t.done} onChange={() => st.updateTask(t.id, { done: !t.done })} color="#ca8a04" />
-                  <span className={cx('flex-1 text-sm', t.done ? 'text-slate-400 line-through' : 'text-slate-700')}>{t.title}</span>
-                  <span className={cx('text-xs', !t.done && t.date < today ? 'font-medium text-rose-600' : 'text-slate-500')}>
-                    {fmt(t.date, 'M/d')} · Day {cultureDay(seeding.date, t.date)}
-                  </span>
+      <SectionLabel
+        right={
+          <button className="flex min-h-9 items-center gap-0.5 text-[13px] font-semibold text-brand-700" onClick={() => open({ kind: 'assay', seedingId: seeding.id })}>
+            <Plus className="size-4" />
+            追加
+          </button>
+        }
+      >
+        アッセイ {assays.length > 0 && <span className="font-normal text-faint">{assays.filter((a) => a.done).length}/{assays.length}</span>}
+      </SectionLabel>
+      {assays.length === 0 ? (
+        <button className="group-card flex min-h-14 w-full items-center justify-center gap-1 text-[15px] font-semibold text-brand-700" onClick={() => open({ kind: 'assay', seedingId: seeding.id })}>
+          <Plus className="size-4" />
+          アッセイを予定する
+        </button>
+      ) : (
+        <List>
+          {assays.map((a) => {
+            const overdue = !a.done && a.date < today
+            return (
+              <div key={a.id} role="button" onClick={() => open({ kind: 'assay', id: a.id })} className="flex min-h-16 cursor-pointer items-center gap-3 px-4 py-2.5 active:bg-black/[.03]">
+                <div className={cx('min-w-0 flex-1', a.done && 'opacity-45')}>
+                  <div className={cx('truncate text-[15px] font-semibold', a.done && 'line-through')}>{a.name}</div>
+                  <div className={cx('mt-0.5 text-[13px]', overdue ? 'font-semibold text-rose-600' : 'text-sub')}>
+                    {fmt(a.date, 'M/d (E)')}
+                    {a.time && ` ${a.time}`} · {cultureDay(seeding.date, a.date)}日目 · {a.done ? '実施済み' : relativeLabel(a.date)}
+                  </div>
+                  {a.result && <div className="mt-0.5 truncate text-[13px] text-emerald-700">結果: {a.result}</div>}
                 </div>
-              ))
-            )}
-          </Section>
-        </div>
-      </div>
-    </div>
-  )
-}
+                <Check checked={a.done} onChange={() => st.setAssayDone(a.id, !a.done)} label="実施済み" />
+              </div>
+            )
+          })}
+        </List>
+      )}
 
-function KV({ k, v, className }: { k: string; v: string; className?: string }) {
-  return (
-    <div className={className}>
-      <div className="text-xs text-slate-400">{k}</div>
-      <div className="whitespace-pre-wrap font-medium text-slate-700">{v}</div>
+      {tasks.length > 0 && (
+        <>
+          <SectionLabel
+            right={
+              tasks.some((t) => t.done) && (
+                <button className="min-h-9 text-[13px] font-semibold text-sub" onClick={() => setShowDoneTasks((v) => !v)}>
+                  {showDoneTasks ? '完了を隠す' : '完了も表示'}
+                </button>
+              )
+            }
+          >
+            培地交換など
+          </SectionLabel>
+          <List>
+            {visibleTasks.length === 0 && <div className="py-4 text-center text-[14px] text-sub">残りの予定はありません</div>}
+            {visibleTasks.map((t) => (
+              <div key={t.id} role="button" onClick={() => open({ kind: 'task', id: t.id })} className="flex min-h-14 cursor-pointer items-center gap-3 px-4 active:bg-black/[.03]">
+                <span className={cx('flex-1 text-[15px]', t.done && 'text-faint line-through')}>{t.title}</span>
+                <span className={cx('text-[13px]', !t.done && t.date < today ? 'font-semibold text-rose-600' : 'text-sub')}>
+                  {fmt(t.date, 'M/d')}・{cultureDay(seeding.date, t.date)}日目
+                </span>
+                <Check checked={t.done} onChange={() => st.updateTask(t.id, { done: !t.done })} />
+              </div>
+            ))}
+          </List>
+        </>
+      )}
+
+      {(seeding.density || seeding.wells || seeding.notes) && (
+        <>
+          <SectionLabel>詳細</SectionLabel>
+          <List>
+            {seeding.density && <Row title="播種密度" right={<span className="text-[15px] text-sub">{seeding.density}</span>} />}
+            {seeding.wells && <Row title="ウェル数" right={<span className="text-[15px] text-sub">{seeding.wells}</span>} />}
+            {seeding.notes && <p className="whitespace-pre-wrap px-4 py-3 text-[14px]">{seeding.notes}</p>}
+          </List>
+        </>
+      )}
+
+      <button className="mt-6 flex min-h-11 w-full items-center justify-center gap-1.5 text-[15px] font-semibold text-brand-700" onClick={duplicate}>
+        <Copy className="size-4" />
+        同じ条件で今日また播種する
+      </button>
     </div>
   )
 }
