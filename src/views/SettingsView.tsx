@@ -1,6 +1,7 @@
 import { useRef } from 'react'
 import { BrandLogo } from '../components/Brand'
-import { Download, FileSpreadsheet, Sparkles, Trash2, Upload } from 'lucide-react'
+import { Download, ExternalLink, FileSpreadsheet, Sparkles, Trash2, Upload } from 'lucide-react'
+import matriUrl from '../assets/external/lovematri.png'
 import { useStore, selectData } from '../store/useStore'
 import { useUI, confirmDialog } from '../store/useUI'
 import { todayStr } from '../lib/date'
@@ -9,6 +10,9 @@ import { usePrefs } from '../store/usePrefs'
 import { List, PageTitle, Row, SectionLabel, Segmented } from '../components/ui'
 import { CloudSettingsSection } from '../components/CloudSync'
 import { AppSection, NotifySection } from '../components/AppSettings'
+
+/** 外部接続：在庫（出庫・入庫）管理アプリ LoveMatri */
+const LOVEMATRI_URL = 'https://mucin7777.github.io/LoveMatri/'
 
 function download(filename: string, content: string, type: string) {
   const blob = new Blob([content], { type })
@@ -138,6 +142,20 @@ export function SettingsView() {
 
       <SectionLabel>その他</SectionLabel>
       <List>
+        <a
+          href={LOVEMATRI_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex min-h-16 w-full items-center gap-3 px-4 py-2 text-left transition hover:bg-mint-soft/60 active:bg-mint-soft"
+        >
+          <img src={matriUrl} alt="" width={44} height={44} draggable={false} className="-my-1 size-11 shrink-0 select-none" />
+          <div className="min-w-0 flex-1">
+            <div className="text-[11px] font-bold tracking-[0.04em] text-faint">外部接続</div>
+            <div className="truncate text-[15px] font-semibold">LoveMatri を開く</div>
+            <div className="truncate text-[12px] text-sub">出庫・入庫管理（別のページで開きます）</div>
+          </div>
+          <ExternalLink className="size-4 shrink-0 text-faint" aria-hidden="true" />
+        </a>
         <Row
           onClick={() =>
             confirmDialog({

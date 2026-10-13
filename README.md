@@ -37,10 +37,12 @@
 
 | 場所 | 内容 |
 | --- | --- |
-| `cellender-design-kit/assets/` | 受け取った原本画像 10 点（変更しない。横長ロゴ `cellender-logo.png` を含む） |
+| `cellender-design-kit/assets/` | 受け取った原本画像 11 点（変更しない。横長ロゴ `cellender-logo.png`、マトリちゃん `lovematri-matri.png` を含む） |
 | `src/assets/icons/` | ナビ用アイコン（`{calendar,cells,seeding,settings}-{default,active}.png`、144px） |
 | `src/assets/brand/cellender-symbol.png` | 空状態用シンボル（384px） |
-| `src/assets/brand/cellender-logo.png` | 横長ロゴ（高さ 192px・256 色）。ヘッダー・起動画面・ようこそ・設定で、アプリ名の文字の代わりに使う |
+| `src/assets/brand/cellender-logo.png` | 横長ロゴ（高さ 192px・256 色。ロゴタイプはシンボルに対して 20% 小さく組み直し）。ヘッダー・ようこそ・設定で使う |
+| `src/assets/brand/cellender-mark.png`, `cellender-wordmark.png` | 起動画面用（シンボルの下にロゴタイプ） |
+| `src/assets/external/lovematri.png` | 設定の外部接続（LoveMatri）に出すマトリちゃん（144px） |
 | `public/` | `favicon.ico`（16/32/48）、`favicon-16.png`、`favicon-32.png`、`apple-touch-icon.png`（180px・オフホワイト背景） |
 
 原本から処理版を作り直すときは `python3 scripts/process-assets.py`（Pillow・numpy が必要）。
