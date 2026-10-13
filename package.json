@@ -11,6 +11,7 @@
     "typecheck": "tsc -p ."
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.117.3",
     "date-fns": "^4.4.0",
     "lucide-react": "^1.55.0",
     "react": "^18.3.1",

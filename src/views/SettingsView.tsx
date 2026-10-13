@@ -7,6 +7,7 @@ import type { AppData } from '../types'
 import { usePrefs } from '../store/usePrefs'
 import { List, PageTitle, Row, SectionLabel, Segmented } from '../components/ui'
 import { BrandLockup } from '../components/Brand'
+import { CloudSettingsSection } from '../components/CloudSync'
 
 function download(filename: string, content: string, type: string) {
   const blob = new Blob([content], { type })
@@ -94,6 +95,8 @@ export function SettingsView() {
         ))}
       </div>
 
+      <CloudSettingsSection />
+
       <SectionLabel>表示</SectionLabel>
       <List>
         <div className="flex min-h-14 items-center gap-3 px-4">
@@ -116,7 +119,7 @@ export function SettingsView() {
         <Row onClick={exportCsv} left={<FileSpreadsheet className="size-5 text-teal-dark" />} title="記録を CSV で出力" sub="Excel で開けます" />
       </List>
       <p className="mt-2 px-1 text-[12px] leading-relaxed text-sub">
-        データはこの端末のブラウザ内だけに保存されます。PC とスマホでは別々のデータになるため、移すときはバックアップを保存して、もう一方で復元してください。
+        データはこの端末のブラウザにも保存されます。クラウド同期を使わない場合、PC とスマホでは別々のデータになるため、移すときはバックアップを保存して、もう一方で復元してください。
       </p>
       <input
         ref={fileRef}

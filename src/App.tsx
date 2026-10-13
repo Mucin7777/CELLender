@@ -6,6 +6,7 @@ import { useUI } from './store/useUI'
 import { todayStr } from './lib/date'
 import { ModalHost, Toaster } from './components/ModalHost'
 import { BrandLockup } from './components/Brand'
+import { CloudStatusButton, SyncConflictDialog } from './components/CloudSync'
 import { NavIcon, type NavIconName } from './components/NavIcon'
 import { cx } from './components/ui'
 import { CalendarView } from './views/CalendarView'
@@ -107,6 +108,9 @@ export default function App() {
             )
           })}
         </nav>
+        <div className="mt-auto border-t border-hair pt-3">
+          <CloudStatusButton variant="row" />
+        </div>
       </aside>
 
       <div className="min-w-0 flex-1">
@@ -116,6 +120,9 @@ export default function App() {
             <a href="#/" aria-label="cellender カレンダーへ" className="-ml-1 rounded-xl px-1 py-1">
               <BrandLockup size={26} />
             </a>
+            <div className="ml-auto">
+              <CloudStatusButton variant="icon" />
+            </div>
           </header>
         )}
 
@@ -153,6 +160,7 @@ export default function App() {
       </nav>
 
       <ModalHost />
+      <SyncConflictDialog />
       <Toaster />
     </div>
   )

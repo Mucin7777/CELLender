@@ -6,6 +6,7 @@ import { LineForm } from './LineForm'
 import { PassageForm } from './PassageForm'
 import { SeedingForm } from './SeedingForm'
 import { TaskForm } from './TaskForm'
+import { LoginSheet } from './CloudSync'
 
 function renderModal(m: ModalState) {
   switch (m.kind) {
@@ -23,6 +24,8 @@ function renderModal(m: ModalState) {
       return <AddSheet date={m.date} />
     case 'event':
       return <EventDetail event={m.event} />
+    case 'login':
+      return <LoginSheet mode={m.mode} />
     case 'confirm':
       return <ConfirmDialog {...m} />
   }

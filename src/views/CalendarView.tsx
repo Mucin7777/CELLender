@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { addDays, startOfWeek } from 'date-fns'
-import { Check as CheckIcon, ChevronLeft, ChevronRight, Plus, Sparkles } from 'lucide-react'
+import { Check as CheckIcon, ChevronLeft, ChevronRight, Cloud, Plus, Sparkles } from 'lucide-react'
+import { useCloud } from '../lib/cloud/sync'
 import { useStore } from '../store/useStore'
 import { useUI } from '../store/useUI'
 import { usePrefs } from '../store/usePrefs'
@@ -58,11 +59,13 @@ export function CalendarView() {
   const byDate = useMemo(() => groupByDate(events), [events])
   const lineById = useMemo(() => new Map(lines.map((l) => [l.id, l])), [lines])
   const { ref: gridRef, cap } = useChipCapacity(lines.length > 0)
+  const cloudStatus = useCloud((c) => c.status)
 
   const shift = (n: number) => setCalAnchor(toDateStr(addDays(fromDateStr(anchor), n)))
   const swipe = useSwipe(() => shift(14), () => shift(-14))
 
-  if (lines.length === 0) return <Welcome onSample={loadSample} onAdd={() => open({ kind: 'line' })} />
+  if (lines.length === 0)
+    return <Welcome onSample={loadSample} onAdd={() => open({ kind: 'line' })} onLogin={() => open({ kind: 'login', mode: 'signIn' })} canLogin={cloudStatus === 'signedOut'} />
 
   const first = days[0]
   const last = days[13]
@@ -226,7 +229,7 @@ function Legend({ lines }: { lines: CellLine[] }) {
   )
 }
 
-function Welcome({ onSample, onAdd }: { onSample: () => void; onAdd: () => void }) {
+function Welcome({ onSample, onAdd, onLogin, canLogin }: { onSample: () => void; onAdd: () => void; onLogin: () => void; canLogin: boolean }) {
   return (
     <div className="flex flex-col items-center pt-6 text-center">
       <BrandMark size={128} />
@@ -262,6 +265,12 @@ function Welcome({ onSample, onAdd }: { onSample: () => void; onAdd: () => void 
           <Sparkles className="size-4" />
           サンプルデータで試す
         </button>
+        {canLogin && (
+          <button className="btn-ghost w-full" onClick={onLogin}>
+            <Cloud className="size-4" />
+            登録済みのアカウントでログイン
+          </button>
+        )}
       </div>
     </div>
   )
