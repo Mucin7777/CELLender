@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { useShallow } from 'zustand/react/shallow'
 import { addDays, startOfWeek } from 'date-fns'
 import { Check as CheckIcon, ChevronLeft, ChevronRight, Cloud, Plus, Sparkles } from 'lucide-react'
 import { useCloud } from '../lib/cloud/sync'
@@ -52,8 +53,8 @@ export function CalendarView() {
   const lines = useStore((s) => s.lines)
   const loadSample = useStore((s) => s.loadSample)
   const events = useCalendarEvents()
-  const { open, calAnchor, setCalAnchor, lastDay } = useUI()
-  const { weekStartsOn, bandLabel } = usePrefs()
+  const { open, calAnchor, setCalAnchor, lastDay } = useUI(useShallow((s) => ({ open: s.open, calAnchor: s.calAnchor, setCalAnchor: s.setCalAnchor, lastDay: s.lastDay })))
+  const { weekStartsOn, bandLabel } = usePrefs(useShallow((s) => ({ weekStartsOn: s.weekStartsOn, bandLabel: s.bandLabel })))
   const anchor = calAnchor ?? today
   const days = useMemo(() => periodDays(anchor, weekStartsOn), [anchor, weekStartsOn])
   const byDate = useMemo(() => groupByDate(events), [events])
@@ -170,6 +171,7 @@ function DayCell({
         'group flex min-h-0 min-w-0 flex-col items-stretch gap-[3px] overflow-hidden border-b border-hair px-[3px] pb-1 pt-1.5 text-left transition',
         !lastCol && 'border-r border-r-[#EDF3F0]',
         isSelected ? 'bg-mint-soft' : isToday ? 'bg-[#F4FAF7]' : 'bg-white hover:bg-mint-soft/50',
+        'active:bg-mint',
         'focus-visible:-outline-offset-2',
       )}
     >

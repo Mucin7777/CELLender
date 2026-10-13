@@ -1,4 +1,5 @@
 import { useStore } from '../store/useStore'
+import { useShallow } from 'zustand/react/shallow'
 import { useUI, confirmDialog } from '../store/useUI'
 import { EVENT_TYPE_META, SEEDING_STATUS_META } from '../lib/constants'
 import { cultureLabel, fmt, relativeLabel } from '../lib/date'
@@ -8,7 +9,7 @@ import { EventTile, eventTone } from './EventRow'
 import { LineDot, List, Row, Sheet } from './ui'
 
 export function EventDetail({ event: ev }: { event: CalendarEvent }) {
-  const { close, closeAll, open, toast } = useUI()
+  const { close, closeAll, open, toast } = useUI(useShallow((s) => ({ close: s.close, closeAll: s.closeAll, open: s.open, toast: s.toast })))
   const st = useStore()
   const line = ev.lineId ? st.lines.find((l) => l.id === ev.lineId) : undefined
   const seeding = ev.seedingId ? st.seedings.find((s) => s.id === ev.seedingId) : undefined

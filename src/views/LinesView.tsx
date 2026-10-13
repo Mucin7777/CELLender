@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { useShallow } from 'zustand/react/shallow'
 import { ChevronLeft, FlaskConical, GitBranch, Plus } from 'lucide-react'
 import { useStore } from '../store/useStore'
 import { useUI, confirmDialog } from '../store/useUI'
@@ -101,7 +102,7 @@ function LineList() {
 
 function LineDetail({ id }: { id: string }) {
   const st = useStore()
-  const { open, toast } = useUI()
+  const { open, toast } = useUI(useShallow((s) => ({ open: s.open, toast: s.toast })))
   const today = todayStr()
   const line = st.lines.find((l) => l.id === id)
   const passages = useMemo(

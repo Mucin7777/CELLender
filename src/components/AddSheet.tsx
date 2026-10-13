@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { useShallow } from 'zustand/react/shallow'
 import { Beaker, ChevronLeft, Droplets, FlaskConical, GitBranch, Plus } from 'lucide-react'
 import { useStore } from '../store/useStore'
 import { useUI } from '../store/useUI'
@@ -7,7 +8,7 @@ import { LineDot, List, Row, Sheet } from './ui'
 
 /** 「＋」から開くアクションシート */
 export function AddSheet({ date }: { date?: string }) {
-  const { close, open } = useUI()
+  const { close, open } = useUI(useShallow((s) => ({ close: s.close, open: s.open })))
   const allLines = useStore((s) => s.lines)
   const lines = useMemo(() => allLines.filter((l) => !l.archived), [allLines])
   const [pickLine, setPickLine] = useState(false)

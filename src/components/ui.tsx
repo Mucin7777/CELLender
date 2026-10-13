@@ -204,11 +204,11 @@ export function Check({ checked, onChange, label }: { checked: boolean; onChange
         e.stopPropagation()
         onChange()
       }}
-      className="-m-2.5 flex size-11 shrink-0 items-center justify-center"
+      className="group -m-2.5 flex size-11 shrink-0 items-center justify-center"
     >
       <span
         className={cx(
-          'flex size-6 items-center justify-center rounded-full border-2 transition',
+          'flex size-6 items-center justify-center rounded-full border-2 transition group-active:scale-90',
           checked ? 'border-teal bg-teal text-white' : 'border-gray-sage bg-white',
         )}
       >
@@ -267,7 +267,7 @@ export function Toggle({ checked, onChange, label }: { checked: boolean; onChang
         onClick={() => onChange(!checked)}
         className={cx('relative h-7 w-12 shrink-0 rounded-full transition', checked ? 'bg-teal' : 'bg-gray-sage')}
       >
-        <span className={cx('absolute top-0.5 size-6 rounded-full bg-white shadow transition-all', checked ? 'left-[22px]' : 'left-0.5')} />
+        <span className={cx('absolute left-0.5 top-0.5 size-6 rounded-full bg-white shadow transition-transform', checked && 'translate-x-5')} />
       </button>
     </label>
   )

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useShallow } from 'zustand/react/shallow'
 import { useStore, type NewLine } from '../store/useStore'
 import { useUI, confirmDialog } from '../store/useUI'
 import { LINE_COLORS } from '../lib/constants'
@@ -8,10 +9,10 @@ import { navigate } from '../lib/router'
 import { Disclosure, Field, Sheet, cx } from './ui'
 
 export function LineForm({ id }: { id?: string }) {
-  const { close, toast } = useUI()
+  const { close, toast } = useUI(useShallow((s) => ({ close: s.close, toast: s.toast })))
   const lines = useStore((s) => s.lines)
   const existing = lines.find((l) => l.id === id)
-  const { addLine, updateLine, deleteLine } = useStore()
+  const { addLine, updateLine, deleteLine } = useStore(useShallow((s) => ({ addLine: s.addLine, updateLine: s.updateLine, deleteLine: s.deleteLine })))
   const usedColors = new Set(lines.map((l) => l.color))
 
   const [form, setForm] = useState<NewLine>(

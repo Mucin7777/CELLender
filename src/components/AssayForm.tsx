@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { useShallow } from 'zustand/react/shallow'
 import { useStore } from '../store/useStore'
 import { useUI, confirmDialog } from '../store/useUI'
 import { ASSAY_PRESETS } from '../lib/constants'
@@ -6,11 +7,11 @@ import { cultureLabel, fmt, todayStr } from '../lib/date'
 import { Chips, Disclosure, Field, LineDot, Sheet, Toggle, cx } from './ui'
 
 export function AssayForm({ id, seedingId, date }: { id?: string; seedingId?: string; date?: string }) {
-  const { close, toast, open } = useUI()
+  const { close, toast, open } = useUI(useShallow((s) => ({ close: s.close, toast: s.toast, open: s.open })))
   const existing = useStore((s) => s.assays.find((a) => a.id === id))
   const seedings = useStore((s) => s.seedings)
   const lines = useStore((s) => s.lines)
-  const { addAssay, updateAssay, deleteAssay } = useStore()
+  const { addAssay, updateAssay, deleteAssay } = useStore(useShallow((s) => ({ addAssay: s.addAssay, updateAssay: s.updateAssay, deleteAssay: s.deleteAssay })))
   const lineById = useMemo(() => new Map(lines.map((l) => [l.id, l])), [lines])
   const fixed = existing?.seedingId ?? seedingId
 

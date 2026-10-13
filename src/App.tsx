@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { useShallow } from 'zustand/react/shallow'
 import { Plus } from 'lucide-react'
 import { useRoute, navigate, type Route } from './lib/router'
 import { useStore } from './store/useStore'
@@ -30,7 +31,7 @@ const tabOf = (r: Route): TabKey => (r.view === 'day' ? 'home' : r.view)
 
 /** 今日やるべき（今日まで・未完了）件数 */
 function useDueCount() {
-  const { lines, assays, tasks } = useStore()
+  const { lines, assays, tasks } = useStore(useShallow((s) => ({ lines: s.lines, assays: s.assays, tasks: s.tasks })))
   return useMemo(() => {
     const t = todayStr()
     return (
@@ -118,7 +119,7 @@ export default function App() {
       <div className="min-w-0 flex-1">
         {/* スマホ: ブランドのヘッダー（タブの最上位のみ） */}
         {isRoot && (
-          <header className="sticky top-0 z-30 flex h-[var(--appbar-h)] items-center bg-canvas/90 px-4 pt-[env(safe-area-inset-top)] backdrop-blur-md lg:hidden">
+          <header className="sticky top-0 z-30 flex h-[var(--appbar-h)] items-center bg-canvas px-4 pt-[env(safe-area-inset-top)] lg:hidden">
             <a href="#/" aria-label="cellender カレンダーへ" className="-ml-1 rounded-xl px-1 py-1">
               <BrandLockup size={26} />
             </a>
@@ -141,7 +142,7 @@ export default function App() {
       </div>
 
       {/* スマホ: 下部タブバー（中央に追加ボタン） */}
-      <nav aria-label="メイン" className="fixed inset-x-0 bottom-0 z-40 border-t border-hair bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl lg:hidden">
+      <nav aria-label="メイン" className="fixed inset-x-0 bottom-0 z-40 border-t border-hair bg-white pb-[env(safe-area-inset-bottom)] lg:hidden">
         <div className="mx-auto flex h-[72px] max-w-xl items-center px-1">
           {TABS.slice(0, 2).map((t) => (
             <TabButton key={t.key} tab={t} active={current === t.key} badge={t.key === 'home' ? dueBadge('bar') : null} />
@@ -180,7 +181,7 @@ function TabButton({ tab, active, badge }: { tab: (typeof TABS)[number]; active:
       )}
     >
       {/* hover は選択状態（アイコンの塗り）と区別できるよう、アイコンの背後に淡い面を出す */}
-      <span className={cx('flex h-8 w-12 items-center justify-center rounded-full transition', !active && 'group-hover:bg-mint-soft')}>
+      <span className={cx('flex h-8 w-12 items-center justify-center rounded-full transition group-active:bg-mint', !active && 'group-hover:bg-mint-soft')}>
         <NavIcon name={tab.icon} active={active} size={28} />
       </span>
       {tab.label}
