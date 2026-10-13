@@ -1,6 +1,8 @@
 import symbolUrl from '../assets/brand/cellender-symbol.png'
-// 起動画面ですぐ表示できるよう、ロゴは JS に埋め込む（約 16KB）
+// 起動画面・ヘッダーですぐ表示できるよう、ロゴは JS に埋め込む（3 枚で約 35KB）
 import logoUrl from '../assets/brand/cellender-logo.png?inline'
+import markUrl from '../assets/brand/cellender-mark.png?inline'
+import wordmarkUrl from '../assets/brand/cellender-wordmark.png?inline'
 import { cx } from './ui'
 
 export const APP_NAME = 'cellender'
@@ -21,12 +23,11 @@ export function BrandMark({ size = 28, className, decorative = true }: { size?: 
   )
 }
 
-/** 横長ロゴ（シンボル＋ロゴタイプ）の縦横比。scripts/process-assets.py の出力（951×192）に合わせる */
-export const LOGO_RATIO = 951 / 192
-/** ロゴ画像の中で、シンボルとロゴタイプの間の位置（左端からの割合）。起動画面で別々に動かすのに使う */
-export const LOGO_SPLIT = 0.2076
-/** シンボルの中心（左端からの割合） */
-export const LOGO_MARK_CENTER = 0.0965
+/** 横長ロゴ（シンボル＋ロゴタイプ）の縦横比。scripts/process-assets.py の出力（804×192）に合わせる */
+export const LOGO_RATIO = 804 / 192
+/** 起動画面用：シンボル（367×384）とロゴタイプ（612×128）の縦横比 */
+export const MARK_RATIO = 367 / 384
+export const WORDMARK_RATIO = 612 / 128
 
 /** 横長ロゴ。アプリ名を文字で出していた場所はすべてこれを使う */
 export function BrandLogo({ height = 28, className, alt = APP_NAME }: { height?: number; className?: string; alt?: string }) {
@@ -44,4 +45,4 @@ export function BrandLogo({ height = 28, className, alt = APP_NAME }: { height?:
   )
 }
 
-export { logoUrl }
+export { markUrl, wordmarkUrl }

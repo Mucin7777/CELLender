@@ -97,8 +97,17 @@ body {
 .animate-fade-in { animation: fade-in .15s ease-out; }
 
 /* 起動演出：シンボルが細胞のようにふわりと現れ、少し遅れて文字が浮かぶ */
-@keyframes splash-mark { from { opacity: 0; transform: scale(.86) rotate(-14deg); } to { opacity: 1; transform: none; } }
-@keyframes splash-word { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
-.splash-mark { animation: splash-mark .7s cubic-bezier(.2,.8,.2,1) both; }
-.splash-word { animation: splash-word .5s ease-out .28s both; }
-@media (prefers-reduced-motion: reduce) { .splash-mark, .splash-word { animation: none; } }
+/* 起動演出：シンボルが浮かび上がる → ロゴタイプが左から書き込まれる（境目をぼかしたマスクを左から右へ動かす） */
+@keyframes splash-rise { from { opacity: 0; transform: translateY(14px) scale(.94); } to { opacity: 1; transform: none; } }
+@keyframes splash-write { from { -webkit-mask-position: 100% 0; mask-position: 100% 0; } to { -webkit-mask-position: 0 0; mask-position: 0 0; } }
+.splash-mark { animation: splash-rise .8s cubic-bezier(.2,.8,.2,1) both; }
+.splash-write {
+  -webkit-mask-image: linear-gradient(90deg, #000 45%, transparent 55%);
+  mask-image: linear-gradient(90deg, #000 45%, transparent 55%);
+  -webkit-mask-size: 220% 100%;
+  mask-size: 220% 100%;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  animation: splash-write .9s cubic-bezier(.45,.05,.35,1) .6s both;
+}
+@media (prefers-reduced-motion: reduce) { .splash-mark, .splash-write { animation: none; -webkit-mask-image: none; mask-image: none; } }
