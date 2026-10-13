@@ -231,7 +231,7 @@ function Legend({ lines }: { lines: CellLine[] }) {
 
 function Welcome({ onSample, onAdd, onLogin, canLogin }: { onSample: () => void; onAdd: () => void; onLogin: () => void; canLogin: boolean }) {
   return (
-    <div className="flex flex-col items-center pt-6 text-center">
+    <div className="mx-auto flex max-w-xl flex-col items-center pt-6 text-center">
       <BrandMark size={128} />
       <h1 className="mt-5 text-[26px] font-bold leading-tight">
         <span className="font-num font-semibold">cellender</span> へようこそ

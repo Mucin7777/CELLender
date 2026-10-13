@@ -99,7 +99,7 @@ export function LineForm({ id }: { id?: string }) {
                     aria-checked={form.color === c}
                     aria-label={`色 ${i + 1}`}
                     onClick={() => set('color', c)}
-                    className={cx('size-9 rounded-full ring-offset-2 transition', form.color === c ? 'ring-2 ring-teal' : 'hover:scale-105')}
+                    className={cx('size-9 rounded-full transition', form.color === c ? 'outline-2 outline-offset-2 outline-teal' : 'hover:scale-105')}
                     style={{ backgroundColor: t.pale, boxShadow: `inset 0 0 0 2px ${t.deep}` }}
                   />
                 )

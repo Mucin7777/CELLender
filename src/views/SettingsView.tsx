@@ -6,7 +6,6 @@ import { todayStr } from '../lib/date'
 import type { AppData } from '../types'
 import { usePrefs } from '../store/usePrefs'
 import { List, PageTitle, Row, SectionLabel, Segmented } from '../components/ui'
-import { BrandLockup } from '../components/Brand'
 import { CloudSettingsSection } from '../components/CloudSync'
 
 function download(filename: string, content: string, type: string) {
@@ -167,10 +166,9 @@ export function SettingsView() {
           title={<span className="text-danger">すべてのデータを削除</span>}
         />
       </List>
-      <div className="mt-8 flex flex-col items-center gap-1.5 text-center">
-        <BrandLockup size={22} />
-        <span className="text-[12px] text-faint">細胞培養・アッセイのスケジュール管理</span>
-      </div>
+      <p className="mt-8 text-center text-[12px] text-faint">
+        <span className="font-num font-semibold">cellender</span> · 細胞培養・アッセイのスケジュール管理
+      </p>
     </div>
   )
 }
