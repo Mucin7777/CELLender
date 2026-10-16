@@ -73,6 +73,41 @@ export function bandLook(e: CalendarEvent, line: CellLine | undefined, mode: Ban
   return look
 }
 
+/** ラインの段の中で、同じ日に複数の予定があるときにどれを表に出すか（小さいほど優先） */
+const LANE_ORDER: Record<CalendarEvent['type'], number> = { passage_plan: 0, passage_done: 1, assay: 2, seeding: 3, medium: 4, other: 5 }
+
+export const compareLane = (a: CalendarEvent, b: CalendarEvent) => Number(a.done) - Number(b.done) || LANE_ORDER[a.type] - LANE_ORDER[b.type]
+
+/**
+ * ラインごとの段（一続きの淡い色の帯）の上に重ねる、その日の印。色 = ライン、形 = 何をするか。
+ *  継代: 濃い色で塗る / 培地交換: 白地＋点線の枠 / 播種: 淡い色＋点 / アッセイ: 中間色で塗る / その他: 白地＋枠
+ */
+export function laneLook(e: CalendarEvent, line: CellLine | undefined): BandLook {
+  const t = eventTone(line)
+  const look: BandLook = {
+    label: EVENT_TYPE_META[e.type].short,
+    style: { backgroundColor: t.deep, color: '#FFFFFF', borderColor: t.deep },
+    dot: false,
+    tick: e.type === 'passage_done',
+    strike: e.done && isCheckable(e),
+    faded: e.done,
+  }
+  if (e.type === 'assay') {
+    look.label = e.title
+    look.style = { backgroundColor: t.edge, color: 'var(--color-ink)', borderColor: t.edge }
+  }
+  if (e.type === 'seeding') {
+    look.dot = true
+    look.style = { backgroundColor: t.pale, color: t.deep, borderColor: t.edge }
+  }
+  if (e.type === 'medium') look.style = { backgroundColor: '#FFFFFF', color: t.deep, borderColor: t.deep, borderStyle: 'dashed' }
+  if (e.type === 'other') {
+    look.label = e.title
+    look.style = { backgroundColor: '#FFFFFF', color: 'var(--color-ink)', borderColor: NEUTRAL_TONE.edge }
+  }
+  return look
+}
+
 /** 予定の種類を一文字で示すタイル。色の決まりはカレンダーの帯と同じ */
 export function EventTile({ event, line, size = 40 }: { event: CalendarEvent; line: CellLine | undefined; size?: number }) {
   const t = eventTone(line)

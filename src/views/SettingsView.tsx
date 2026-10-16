@@ -80,7 +80,7 @@ export function SettingsView() {
     }
   }
 
-  const { weekStartsOn, bandLabel, set: setPrefs } = usePrefs()
+  const { weekStartsOn, bandLabel, calStyle, set: setPrefs } = usePrefs()
 
   return (
     <div>
@@ -112,11 +112,20 @@ export function SettingsView() {
         </div>
         <div className="flex min-h-14 items-center gap-3 px-4">
           <span className="min-w-0 flex-1">
-            <span className="block text-[15px] font-semibold">カレンダーの帯</span>
-            <span className="block text-[12px] text-sub">帯に出す文字（色はいつもライン）</span>
+            <span className="block text-[15px] font-semibold">カレンダーの表示</span>
+            <span className="block text-[12px] text-sub">{calStyle === 'lanes' ? '1 ラインを 1 段で、続けて表示' : '予定ごとに帯で表示'}</span>
           </span>
-          <Segmented value={bandLabel} onChange={(v) => setPrefs({ bandLabel: v })} options={[{ value: 'type', label: '種類' }, { value: 'line', label: 'ライン名' }]} />
+          <Segmented value={calStyle} onChange={(v) => setPrefs({ calStyle: v })} options={[{ value: 'lanes', label: 'ライン別' }, { value: 'chips', label: '予定別' }]} />
         </div>
+        {calStyle === 'chips' && (
+          <div className="flex min-h-14 items-center gap-3 px-4">
+            <span className="min-w-0 flex-1">
+              <span className="block text-[15px] font-semibold">カレンダーの帯</span>
+              <span className="block text-[12px] text-sub">帯に出す文字（色はいつもライン）</span>
+            </span>
+            <Segmented value={bandLabel} onChange={(v) => setPrefs({ bandLabel: v })} options={[{ value: 'type', label: '種類' }, { value: 'line', label: 'ライン名' }]} />
+          </div>
+        )}
       </List>
 
       <SectionLabel>バックアップ</SectionLabel>
