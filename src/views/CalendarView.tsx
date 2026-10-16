@@ -127,40 +127,46 @@ export function CalendarView() {
         </button>
       </header>
 
-      <div className="grid grid-cols-7 border-y border-hair" aria-hidden="true">
-        {days.slice(0, 7).map((d) => (
-          <div key={d.getDay()} className="py-1.5 pl-2 font-num text-[10px] font-semibold tracking-[0.08em]" style={{ color: d.getDay() === 0 ? SUN : d.getDay() === 6 ? SAT : 'var(--color-faint)' }}>
-            {WD_EN[d.getDay()]}
-          </div>
-        ))}
+      <div className="flex border-y border-hair" aria-hidden="true">
+        {laneLines.length > 0 && <div className={cx(GUTTER_W, 'shrink-0 border-r border-hair')} />}
+        <div className="grid min-w-0 flex-1 grid-cols-7">
+          {days.slice(0, 7).map((d) => (
+            <div key={d.getDay()} className="py-1.5 pl-2 font-num text-[10px] font-semibold tracking-[0.08em]" style={{ color: d.getDay() === 0 ? SUN : d.getDay() === 6 ? SAT : 'var(--color-faint)' }}>
+              {WD_EN[d.getDay()]}
+            </div>
+          ))}
+        </div>
       </div>
 
       <div ref={gridRef} className="flex min-h-0 flex-1 flex-col" {...swipe}>
         {[0, 1].map((w) => {
           const week = days.slice(w * 7, w * 7 + 7)
           return (
-            <div key={w} className="relative grid min-h-0 flex-1 grid-cols-7">
-              {week.map((d, i) => {
-                const ds = toDateStr(d)
-                const evs = byDate.get(ds) ?? []
-                return (
-                  <DayCell
-                    key={ds}
-                    date={d}
-                    events={evs}
-                    chips={lanesMode ? evs.filter((e) => !e.lineId || !laneIds.has(e.lineId)) : evs}
-                    laneSpace={laneSpace}
-                    lineById={lineById}
-                    cap={cap}
-                    mode={bandLabel}
-                    isToday={ds === today}
-                    isSelected={ds === lastDay && ds !== today}
-                    lastCol={i === 6}
-                    onOpen={() => navigate({ view: 'day', date: ds })}
-                  />
-                )
-              })}
-              {laneLines.length > 0 && <LaneLayer week={week} lines={laneLines} byDate={byDate} />}
+            <div key={w} className="flex min-h-0 flex-1">
+              {laneLines.length > 0 && <LaneLabels lines={laneLines} />}
+              <div className="relative grid min-w-0 flex-1 grid-cols-7">
+                {week.map((d, i) => {
+                  const ds = toDateStr(d)
+                  const evs = byDate.get(ds) ?? []
+                  return (
+                    <DayCell
+                      key={ds}
+                      date={d}
+                      events={evs}
+                      chips={lanesMode ? evs.filter((e) => !e.lineId || !laneIds.has(e.lineId)) : evs}
+                      laneSpace={laneSpace}
+                      lineById={lineById}
+                      cap={cap}
+                      mode={bandLabel}
+                      isToday={ds === today}
+                      isSelected={ds === lastDay && ds !== today}
+                      lastCol={i === 6}
+                      onOpen={() => navigate({ view: 'day', date: ds })}
+                    />
+                  )
+                })}
+                {laneLines.length > 0 && <LaneLayer week={week} lines={laneLines} byDate={byDate} />}
+              </div>
             </div>
           )
         })}
@@ -249,6 +255,22 @@ function DayCell({
   )
 }
 
+/** ライン名の列（段と同じ高さで左端にそろえる）。スマホは略称、PC は名前 */
+const GUTTER_W = 'w-[52px] lg:w-[104px]'
+
+function LaneLabels({ lines }: { lines: CellLine[] }) {
+  return (
+    <div aria-hidden="true" className={cx(GUTTER_W, 'flex shrink-0 flex-col border-b border-r border-hair bg-white')} style={{ paddingTop: CELL_HEAD, gap: LANE_GAP }}>
+      {lines.map((line) => (
+        <div key={line.id} className="flex items-center overflow-hidden pl-1.5 pr-1 text-[10px] font-bold leading-none lg:pl-4 lg:text-[11px]" style={{ height: LANE_H, color: lineTone(line.color).deep }}>
+          <span className="truncate lg:hidden">{lineShort(line)}</span>
+          <span className="hidden truncate lg:inline">{line.name}</span>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 /**
  * ラインの段：1 ラインにつき 1 段、どのラインも同じ高さで、週の端から端まで同じ淡い色の帯が続く。
  * 予定のある日だけ、その上に印（継代は濃い色など）を重ねる。タップは下の日付セルが受け取る。
@@ -260,8 +282,6 @@ function LaneLayer({ week, lines, byDate }: { week: Date[]; lines: CellLine[]; b
       {lines.map((line) => {
         const tone = lineTone(line.color)
         const perDay = dates.map((ds) => (byDate.get(ds) ?? []).filter((e) => e.lineId === line.id).sort(compareLane))
-        // ライン名は、週の頭から見て最初に予定のない日の段に出す
-        const labelAt = perDay.findIndex((evs) => evs.length === 0)
         return (
           <div key={line.id} className="grid grid-cols-7" style={{ height: LANE_H }}>
             {perDay.map((evs, i) => (
@@ -270,15 +290,7 @@ function LaneLayer({ week, lines, byDate }: { week: Date[]; lines: CellLine[]; b
                 className={cx('relative min-w-0', i === 0 && 'ml-[3px] rounded-l-full', i === 6 && 'mr-[3px] rounded-r-full')}
                 style={{ backgroundColor: tone.pale }}
               >
-                {evs.length > 0 ? (
-                  <LaneMark event={evs[0]} line={line} more={evs.length - 1} />
-                ) : (
-                  i === labelAt && (
-                    <span className="absolute inset-0 flex items-center overflow-hidden whitespace-nowrap pl-1.5 text-[10px] font-bold leading-none" style={{ color: tone.deep }}>
-                      {lineShort(line)}
-                    </span>
-                  )
-                )}
+                {evs.length > 0 && <LaneMark event={evs[0]} line={line} more={evs.length - 1} />}
               </div>
             ))}
           </div>
@@ -313,7 +325,7 @@ function Legend({ lines, lanes }: { lines: CellLine[]; lanes: boolean }) {
   return (
     <div className="space-y-2 border-t border-hair px-4 pb-2.5 pt-2.5 lg:px-6">
       {lines.length > 0 && (
-        <div className="no-scrollbar flex gap-x-3.5 gap-y-1.5 overflow-x-auto lg:flex-wrap">
+        <div className={cx('no-scrollbar flex gap-x-3.5 gap-y-1.5 overflow-x-auto lg:flex-wrap', lanes && 'lg:hidden')}>
           {lines.map((l) => (
             <span key={l.id} className="flex shrink-0 items-center gap-1.5 text-[11px] text-sub">
               <LineDot color={l.color} className="size-2.5" />
